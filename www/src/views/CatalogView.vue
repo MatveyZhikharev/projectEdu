@@ -72,9 +72,10 @@ export default {
 
     <!-- Courses grid -->
     <div v-else class="courses-grid">
-      <div 
+      <router-link 
         v-for="block in blocks" 
         :key="block.id"
+        :to="{ name: 'material', params: { id: String(block.id) } }"
         class="course-card"
       >
         <div 
@@ -93,14 +94,14 @@ export default {
               {{ block.isAvailable ? 'Доступен' : 'Скоро' }}
             </span>
           </div>
-          <button 
+          <span 
             class="enroll-btn" 
-            :disabled="!block.isAvailable"
+            :class="{ disabled: !block.isAvailable }"
           >
             {{ block.isAvailable ? 'Начать обучение' : 'Скоро будет доступен' }}
-          </button>
+          </span>
         </div>
-      </div>
+      </router-link>
     </div>
   </div>
 </template>
@@ -246,6 +247,9 @@ export default {
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: transform 0.3s, box-shadow 0.3s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .course-card:hover {
@@ -315,13 +319,15 @@ export default {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.3s;
+  display: block;
+  text-align: center;
 }
 
-.enroll-btn:hover:not(:disabled) {
+.enroll-btn:hover:not(.disabled) {
   background: #0056b3;
 }
 
-.enroll-btn:disabled {
+.enroll-btn.disabled {
   background: #e0e0e0;
   color: #999;
   cursor: not-allowed;

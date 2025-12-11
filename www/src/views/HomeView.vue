@@ -102,7 +102,12 @@ export default {
         
         <!-- Blocks list -->
         <div v-else v-show="isMaterialVisible" class="material-list">
-          <div class="material-item" v-for="block in blocks" :key="block.id">
+          <router-link 
+            v-for="block in blocks" 
+            :key="block.id"
+            :to="{ name: 'material', params: { id: String(block.id) } }"
+            class="material-item"
+          >
             <div class="item-preview" :style="{ backgroundImage: `url(${getBlockImageUrl(block.id)})` }">
               <span class="item-order">{{ block.sortOrder }}</span>
             </div>
@@ -110,7 +115,7 @@ export default {
             <p class="item-status" :class="{ available: block.isAvailable }">
               {{ block.isAvailable ? 'Доступен' : 'Недоступен' }}
             </p>
-          </div>
+          </router-link>
         </div>
       </section>
     </div>
@@ -165,6 +170,9 @@ export default {
   overflow: hidden;
   cursor: pointer;
   transition: box-shadow 0.3s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .material-item:hover {

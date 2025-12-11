@@ -6,6 +6,7 @@ import MyCoursesView from '@/views/MyCoursesView.vue'
 import CatalogView from '@/views/CatalogView.vue'
 import PromotionsView from '@/views/PromotionsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import MaterialView from '@/views/MaterialView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -44,6 +45,11 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: ProfileView,
+    },
+    {
+      path: '/material/:id',
+      name: 'material',
+      component: MaterialView,
     },
   ],
 })

@@ -22,4 +22,11 @@ export const blocksApi = {
   getBlockImageUrl(blockId: number) {
     return `/api/blocks/${blockId}/image`
   },
+
+  /**
+   * Get block video URL
+   */
+  getBlockVideoUrl(blockId: number) {
+    return `/api/blocks/${blockId}/video`
+  },
 }
