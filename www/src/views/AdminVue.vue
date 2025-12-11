@@ -4,13 +4,6 @@ import { usersAdminApi, type User, type UserUpdateDto, type PageResponse } from 
 import { videoApi, type VideoDTO } from '@/api/video'
 import type { BlockResponse } from '@/api/blocks'
 
-interface BlockMaterial {
-  id?: number
-  title: string
-  sortOrder?: number
-  isAvailable?: boolean
-}
-
 export default {
   data() {
     return {

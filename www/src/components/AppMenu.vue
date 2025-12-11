@@ -5,23 +5,25 @@ export default {
   components: {
     RouterLink
   },
-  mounted() {
-    let aside = document.querySelector("aside");
-    aside?.addEventListener("mouseenter", () => {
-      aside?.classList.add("active");
-    })
-
-    aside?.addEventListener("mouseleave", () => {
-      aside?.classList.remove("active");
-    })
-
+  data() {
+    return {
+      isActive: false
+    }
+  },
+  methods: {
+    handleMouseEnter() {
+      this.isActive = true
+    },
+    handleMouseLeave() {
+      this.isActive = false
+    }
   }
 }
 
 </script>
 
 <template>
-  <aside>
+  <aside :class="{ active: isActive }" @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
     <nav>
       <ul>
         <li class="btn section-type">

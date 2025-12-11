@@ -1,6 +1,14 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse } from '@/api/blocks'
 
+interface MaterialItem {
+  id: number
+  title: string
+  description: string
+  preview: string
+  duration: string
+}
+
 export default {
   data() {
     return {
@@ -10,30 +18,34 @@ export default {
       blocks: [] as BlockResponse[],
       materials: [
         {
+          id: 1,
           title: "Знакомство",
           description: "Вводный урок по ремонту техники",
           preview: "",
           duration: "48:52"
         },
         {
+          id: 2,
           title: "Знакомство",
           description: "",
           preview: "",
           duration: ""
         },
         {
+          id: 3,
           title: "Знакомство",
           description: "",
           preview: "",
           duration: ""
         },
         {
+          id: 4,
           title: "Знакомство",
           description: "",
           preview: "",
           duration: ""
         }
-      ]
+      ] as MaterialItem[]
     }
   },
   async mounted() {
@@ -120,7 +132,7 @@ export default {
           <div class="toggle-icon">{{ isMaterialVisible ? '▼' : '▶' }}</div>
         </div>
         <div v-show="isMaterialVisible" class="material-list">
-          <div class="material-item" v-for="material in materials">
+          <div class="material-item" v-for="material in materials" :key="material.id">
             <div class="item-preview">
               <span class="item-duration">{{ material.duration }}</span>
             </div>
