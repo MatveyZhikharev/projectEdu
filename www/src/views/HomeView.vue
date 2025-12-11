@@ -1,51 +1,18 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse } from '@/api/blocks'
 
-interface MaterialItem {
-  id: number
-  title: string
-  description: string
-  preview: string
-  duration: string
-}
-
 export default {
   data() {
     return {
-      isMaterialVisible: false,
+      isMaterialVisible: true,
       loading: false,
       error: null as string | null,
-      blocks: [] as BlockResponse[],
-      materials: [
-        {
-          id: 1,
-          title: "Знакомство",
-          description: "Вводный урок по ремонту техники",
-          preview: "",
-          duration: "48:52"
-        },
-        {
-          id: 2,
-          title: "Знакомство",
-          description: "",
-          preview: "",
-          duration: ""
-        },
-        {
-          id: 3,
-          title: "Знакомство",
-          description: "",
-          preview: "",
-          duration: ""
-        },
-        {
-          id: 4,
-          title: "Знакомство",
-          description: "",
-          preview: "",
-          duration: ""
-        }
-      ] as MaterialItem[]
+      blocks: [] as BlockResponse[]
+    }
+  },
+  computed: {
+    blocksCount(): number {
+      return this.blocks.length
     }
   },
   async mounted() {
@@ -61,16 +28,6 @@ export default {
       try {
         const response = await blocksApi.getAllAvailableBlocks()
         this.blocks = response.data
-        // Обновляем материалы на основе блоков из API
-        if (this.blocks.length > 0) {
-          this.materials = this.blocks.map(block => ({
-            id: block.id,
-            title: block.title,
-            description: '',
-            preview: blocksApi.getBlockImageUrl(block.id),
-            duration: ''
-          }))
-        }
       } catch (error: any) {
         console.error('Ошибка загрузки блоков:', error)
         this.error = 'Не удалось загрузить материалы курса'
@@ -95,13 +52,10 @@ export default {
       <div class="course-meta">
         <div class="meta-tags">
           <div class="meta-tag">
-            <span>24 часа</span>
+            <span>{{ blocksCount }} уроков</span>
           </div>
           <div class="meta-tag">
             <span>Начальный</span>
-          </div>
-          <div class="meta-tag">
-            <span>1,245 студентов</span>
           </div>
         </div>
         <div class="instructor-info">
@@ -121,23 +75,41 @@ export default {
         <h2 class="section-title">Описание</h2>
         <p>
           Этот курс предназначен для тех, кто только начинает свой путь в ремонте. Каждый модуль содержит практические
-          задания
-          для закрепления материала.
+          задания для закрепления материала.
         </p>
       </section>
 
       <section class="content-section">
         <div class="section-header" @click="toggleMaterials">
-          <h2 class="section-title">Материалы курса</h2>
+          <h2 class="section-title">Материалы курса ({{ blocksCount }})</h2>
           <div class="toggle-icon">{{ isMaterialVisible ? '▼' : '▶' }}</div>
         </div>
-        <div v-show="isMaterialVisible" class="material-list">
-          <div class="material-item" v-for="material in materials" :key="material.id">
-            <div class="item-preview">
-              <span class="item-duration">{{ material.duration }}</span>
+        
+        <!-- Loading state -->
+        <div v-if="loading" class="loading-state">
+          Загрузка материалов...
+        </div>
+        
+        <!-- Error state -->
+        <div v-else-if="error" class="error-state">
+          {{ error }}
+        </div>
+        
+        <!-- Empty state -->
+        <div v-else-if="blocks.length === 0" class="empty-state">
+          Материалы курса пока не добавлены.
+        </div>
+        
+        <!-- Blocks list -->
+        <div v-else v-show="isMaterialVisible" class="material-list">
+          <div class="material-item" v-for="block in blocks" :key="block.id">
+            <div class="item-preview" :style="{ backgroundImage: `url(${getBlockImageUrl(block.id)})` }">
+              <span class="item-order">{{ block.sortOrder }}</span>
             </div>
-            <h5 class="item-header">{{ material.title }}</h5>
-            <p class="item-description">{{ material.description }}</p>
+            <h5 class="item-header">{{ block.title }}</h5>
+            <p class="item-status" :class="{ available: block.isAvailable }">
+              {{ block.isAvailable ? 'Доступен' : 'Недоступен' }}
+            </p>
           </div>
         </div>
       </section>
@@ -191,21 +163,34 @@ export default {
   border: 1px solid #e0e0e0;
   border-radius: 15px;
   overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow 0.3s;
+}
+
+.material-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .item-preview {
   position: relative;
-  background-image: url(https://avatars.mds.yandex.net/i?id=57b6f6ee1e1c40386ef66bc8a18f6b19e079f0ef-4103093-images-thumbs&n=13);
+  background-color: #f5f5f5;
   height: 200px;
   width: 300px;
   background-size: cover;
+  background-position: center;
   border-bottom: 1px solid #e0e0e0;
 }
 
-.item-duration {
+.item-order {
   position: absolute;
-  right: 10px;
-  bottom: 10px;
+  left: 10px;
+  top: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .item-header {
@@ -213,9 +198,31 @@ export default {
   margin: 10px 0;
 }
 
-.item-description {
+.item-status {
   padding: 0 10px;
   margin: 0;
+  font-size: 12px;
+  color: #999;
+}
+
+.item-status.available {
+  color: #2e7d32;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+}
+
+.error-state {
+  color: #c62828;
+  background: #ffebee;
+  border-radius: 8px;
+  margin: 20px 0;
 }
 
 .course-meta {

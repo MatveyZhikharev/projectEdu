@@ -2,19 +2,12 @@
 import { blocksAdminApi, type BlockAddRequest, type BlockUpdateRequest } from '@/api/blocksAdmin'
 import { usersAdminApi, type User, type UserUpdateDto, type PageResponse } from '@/api/usersAdmin'
 import { videoApi, type VideoDTO } from '@/api/video'
-import type { BlockResponse } from '@/api/blocks'
+import { blocksApi, type BlockResponse } from '@/api/blocks'
 
 export default {
   data() {
     return {
       activeTab: 'blocks' as 'blocks' | 'users' | 'videos',
-      course: {
-        title: "Основы ремонта техники",
-        description: "Научитесь ремонтировать технику, используя отвертку, руки и силу мыслей",
-        duration: "24 часа",
-        level: "Начальный",
-        studentsCount: 1245
-      },
       blocks: [] as BlockResponse[],
       loading: false,
       error: null as string | null,
@@ -45,6 +38,14 @@ export default {
         file: null as File | null
       },
       uploadingVideo: false
+    }
+  },
+  computed: {
+    blocksCount(): number {
+      return Array.isArray(this.blocks) ? this.blocks.length : 0
+    },
+    publishedBlocksCount(): number {
+      return Array.isArray(this.blocks) ? this.blocks.filter(b => b.isAvailable).length : 0
     }
   },
   async mounted() {
@@ -171,6 +172,9 @@ export default {
       if (currentBlock && nextBlock) {
         this.swapBlocks(currentBlock.id, nextBlock.id)
       }
+    },
+    getBlockImageUrl(blockId: number) {
+      return blocksApi.getBlockImageUrl(blockId)
     },
     // User management methods
     async fetchUsers() {
@@ -346,19 +350,16 @@ export default {
     <!-- Blocks Tab -->
     <div v-if="activeTab === 'blocks'" class="blocks-section">
       <div class="course-header">
-        <h1 class="course-title">{{ course.title }}</h1>
-        <p class="course-description">{{ course.description }}</p>
+        <h1 class="course-title">Управление блоками курса</h1>
+        <p class="course-description">Создавайте, редактируйте и управляйте блоками обучающего курса</p>
 
         <div class="course-meta">
           <div class="meta-tags">
             <div class="meta-tag">
-              <span>{{ course.duration }}</span>
+              <span>{{ blocksCount }} блоков</span>
             </div>
             <div class="meta-tag">
-              <span>{{ course.level }}</span>
-            </div>
-            <div class="meta-tag">
-              <span>{{ course.studentsCount }} студентов</span>
+              <span>{{ publishedBlocksCount }} опубликовано</span>
             </div>
           </div>
         </div>
@@ -396,6 +397,12 @@ export default {
               :key="block.id"
               class="block-item"
             >
+              <!-- Block Image Preview -->
+              <div 
+                class="block-image-preview" 
+                :style="{ backgroundImage: `url(${getBlockImageUrl(block.id)})` }"
+              ></div>
+
               <div class="block-order">
                 <button 
                   @click="moveBlockUp(index)" 
@@ -820,6 +827,16 @@ export default {
 
 .block-item:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.block-image-preview {
+  width: 80px;
+  height: 60px;
+  background-color: #f5f5f5;
+  background-size: cover;
+  background-position: center;
+  border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .block-order {
