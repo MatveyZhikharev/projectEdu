@@ -1,8 +1,13 @@
 <script lang="ts">
+import { blocksApi, type BlockResponse } from '@/api/blocks'
+
 export default {
   data() {
     return {
       isMaterialVisible: false,
+      loading: false,
+      error: null as string | null,
+      blocks: [] as BlockResponse[],
       materials: [
         {
           title: "Знакомство",
@@ -31,9 +36,38 @@ export default {
       ]
     }
   },
+  async mounted() {
+    await this.fetchBlocks()
+  },
   methods: {
     toggleMaterials() {
       this.isMaterialVisible = !this.isMaterialVisible
+    },
+    async fetchBlocks() {
+      this.loading = true
+      this.error = null
+      try {
+        const response = await blocksApi.getAllAvailableBlocks()
+        this.blocks = response.data
+        // Обновляем материалы на основе блоков из API
+        if (this.blocks.length > 0) {
+          this.materials = this.blocks.map(block => ({
+            id: block.id,
+            title: block.title,
+            description: '',
+            preview: blocksApi.getBlockImageUrl(block.id),
+            duration: ''
+          }))
+        }
+      } catch (error: any) {
+        console.error('Ошибка загрузки блоков:', error)
+        this.error = 'Не удалось загрузить материалы курса'
+      } finally {
+        this.loading = false
+      }
+    },
+    getBlockImageUrl(blockId: number) {
+      return blocksApi.getBlockImageUrl(blockId)
     }
   }
 }

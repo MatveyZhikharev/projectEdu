@@ -1,14 +1,18 @@
-<script lang="js">
+<script lang="ts">
+import { RouterLink } from 'vue-router'
+
 export default {
+  components: {
+    RouterLink
+  },
   mounted() {
     let aside = document.querySelector("aside");
-    let menus = document.querySelectorAll(".btn-description");
-    aside.addEventListener("mouseenter", (e) => {
-      aside.classList.add("active");
+    aside?.addEventListener("mouseenter", () => {
+      aside?.classList.add("active");
     })
 
-    aside.addEventListener("mouseleave", (e) => {
-      aside.classList.remove("active");
+    aside?.addEventListener("mouseleave", () => {
+      aside?.classList.remove("active");
     })
 
   }
@@ -20,20 +24,35 @@ export default {
   <aside>
     <nav>
       <ul>
-        <li class="btn section-type"><img src="../assets/main-page.png" alt="" width="20px">
-          <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Главная</span>
+        <li class="btn section-type">
+          <RouterLink to="/" class="menu-link">
+            <img src="../assets/main-page.png" alt="" width="20px">
+            <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Главная</span>
+          </RouterLink>
         </li>
-        <li class="btn section-type"><img src="../assets/folder.png" alt="" width="20px">
-          <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Мои курсы</span>
+        <li class="btn section-type">
+          <RouterLink to="/my-courses" class="menu-link">
+            <img src="../assets/folder.png" alt="" width="20px">
+            <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Мои курсы</span>
+          </RouterLink>
         </li>
-        <li class="btn section-type"><img src="../assets/catalog.png" alt="" width="20px">
-          <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Каталог курсов</span>
+        <li class="btn section-type">
+          <RouterLink to="/catalog" class="menu-link">
+            <img src="../assets/catalog.png" alt="" width="20px">
+            <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Каталог курсов</span>
+          </RouterLink>
         </li>
-        <li class="btn section-type"><img src="../assets/sale.png" alt="" width="20px">
-          <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Акции</span>
+        <li class="btn section-type">
+          <RouterLink to="/promotions" class="menu-link">
+            <img src="../assets/sale.png" alt="" width="20px">
+            <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Акции</span>
+          </RouterLink>
         </li>
-        <li class="btn section-type"><img src="../assets/profile.png" alt="" width="20px">
-          <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Профиль</span>
+        <li class="btn section-type">
+          <RouterLink to="/profile" class="menu-link">
+            <img src="../assets/profile.png" alt="" width="20px">
+            <span class="btn-description">&nbsp;&nbsp;&nbsp;&nbsp;Профиль</span>
+          </RouterLink>
         </li>
       </ul>
     </nav>
@@ -59,6 +78,13 @@ ul {
 li {
   display: flex;
   align-items: center;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
 }
 
 .btn-description {
