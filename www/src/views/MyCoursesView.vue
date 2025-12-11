@@ -17,7 +17,7 @@ export default {
       return this.blocks.length
     },
     completedCount(): number {
-      // In a real app, this would come from a user progress API
+      // No user progress API endpoint available yet - will be 0 until backend provides this
       return 0
     },
     inProgressCount(): number {
