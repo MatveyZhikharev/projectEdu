@@ -66,6 +66,14 @@ export default {
     },
     goBack() {
       this.$router.back()
+    },
+    handleStartTest() {
+      // Test functionality will be implemented when test API is available
+      alert('Функционал тестирования будет доступен в ближайшее время')
+    },
+    handleMarkComplete() {
+      // Mark as complete functionality will be implemented when progress API is available
+      alert('Прогресс сохранён! (Функционал будет полностью доступен позже)')
     }
   }
 }
@@ -167,7 +175,7 @@ export default {
               <h3>Тест по материалу</h3>
               <p>Проверьте свои знания после изучения урока</p>
             </div>
-            <button class="start-test-btn">Начать тест</button>
+            <button class="start-test-btn" @click="handleStartTest">Начать тест</button>
           </div>
         </section>
 
@@ -176,7 +184,7 @@ export default {
           <button class="nav-btn prev-btn" @click="goBack">
             ← Назад к курсу
           </button>
-          <button class="nav-btn complete-btn">
+          <button class="nav-btn complete-btn" @click="handleMarkComplete">
             Отметить как пройденный ✓
           </button>
         </div>
