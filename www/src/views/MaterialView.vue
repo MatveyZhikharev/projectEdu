@@ -30,6 +30,7 @@ export default {
   methods: {
     async checkAuth() {
       try {
+        console.log(654)
         const response = await authApi.getAuthStatus()
         this.isAuthenticated = response.data.status
       } catch (error) {
@@ -68,11 +69,9 @@ export default {
       this.$router.back()
     },
     handleStartTest() {
-      // Test functionality will be implemented when test API is available
       alert('Функционал тестирования будет доступен в ближайшее время')
     },
     handleMarkComplete() {
-      // Mark as complete functionality will be implemented when progress API is available
       alert('Прогресс сохранён! (Функционал будет полностью доступен позже)')
     }
   }
@@ -81,18 +80,15 @@ export default {
 
 <template>
   <div class="material-container">
-    <!-- Back button -->
     <button class="back-btn" @click="goBack">
       ← Назад к курсу
     </button>
 
-    <!-- Loading state -->
     <div v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
       <p>Загрузка материала...</p>
     </div>
 
-    <!-- Error state -->
     <div v-else-if="error" class="error-state">
       <div class="error-icon">⚠️</div>
       <h2>{{ error }}</h2>
@@ -100,9 +96,7 @@ export default {
       <button @click="goBack" class="retry-btn">Вернуться назад</button>
     </div>
 
-    <!-- Material content -->
     <div v-else-if="block" class="material-content">
-      <!-- Material header -->
       <div class="material-header">
         <div class="material-order">Урок {{ block.sortOrder }}</div>
         <h1 class="material-title">{{ block.title }}</h1>
@@ -111,7 +105,6 @@ export default {
         </div>
       </div>
 
-      <!-- Auth check for content -->
       <div v-if="!isAuthenticated && authChecked" class="auth-required">
         <div class="auth-content">
           <div class="auth-icon">🔒</div>
@@ -124,9 +117,7 @@ export default {
         </div>
       </div>
 
-      <!-- Content for authenticated users -->
       <div v-else class="content-sections">
-        <!-- Video section -->
         <section class="content-section video-section">
           <h2 class="section-title">Видео урок</h2>
           <div class="video-container">
@@ -141,7 +132,6 @@ export default {
           </div>
         </section>
 
-        <!-- Image preview section -->
         <section class="content-section image-section">
           <h2 class="section-title">Превью материала</h2>
           <div class="image-container">
@@ -149,7 +139,6 @@ export default {
           </div>
         </section>
 
-        <!-- Description section -->
         <section class="content-section description-section">
           <h2 class="section-title">Описание</h2>
           <div class="description-content">
@@ -166,7 +155,6 @@ export default {
           </div>
         </section>
 
-        <!-- Test section (if available) -->
         <section v-if="block.testId" class="content-section test-section">
           <h2 class="section-title">Тестирование</h2>
           <div class="test-card">
@@ -179,7 +167,6 @@ export default {
           </div>
         </section>
 
-        <!-- Navigation buttons -->
         <div class="navigation-buttons">
           <button class="nav-btn prev-btn" @click="goBack">
             ← Назад к курсу
@@ -218,7 +205,6 @@ export default {
   text-decoration: underline;
 }
 
-/* Loading state */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -244,7 +230,6 @@ export default {
   }
 }
 
-/* Error state */
 .error-state {
   display: flex;
   flex-direction: column;
@@ -284,7 +269,6 @@ export default {
   background: #0056b3;
 }
 
-/* Material header */
 .material-header {
   margin-bottom: 30px;
   padding-bottom: 20px;
@@ -319,7 +303,6 @@ export default {
   color: #2e7d32;
 }
 
-/* Auth required */
 .auth-required {
   display: flex;
   justify-content: center;
@@ -375,7 +358,6 @@ export default {
   font-size: 14px;
 }
 
-/* Content sections */
 .content-sections {
   display: flex;
   flex-direction: column;
@@ -396,7 +378,6 @@ export default {
   color: #1a1a1a;
 }
 
-/* Video section */
 .video-container {
   border-radius: 12px;
   overflow: hidden;
@@ -409,7 +390,6 @@ export default {
   display: block;
 }
 
-/* Image section */
 .image-container {
   border-radius: 12px;
   overflow: hidden;
@@ -422,7 +402,6 @@ export default {
   display: block;
 }
 
-/* Description section */
 .description-content p {
   color: #444;
   line-height: 1.7;
@@ -454,7 +433,6 @@ export default {
   font-weight: bold;
 }
 
-/* Test section */
 .test-card {
   display: flex;
   align-items: center;
@@ -500,7 +478,6 @@ export default {
   background: #138496;
 }
 
-/* Navigation buttons */
 .navigation-buttons {
   display: flex;
   justify-content: space-between;

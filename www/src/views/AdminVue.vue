@@ -16,7 +16,6 @@ export default {
       },
       editingBlockId: null as number | null,
       editingBlockTitle: "",
-      // User management
       users: [] as User[],
       usersLoading: false,
       usersError: null as string | null,
@@ -28,7 +27,6 @@ export default {
       },
       editingUserId: null as string | null,
       editingUserData: {} as UserUpdateDto,
-      // Video management
       videos: [] as VideoDTO[],
       videosLoading: false,
       videosError: null as string | null,
@@ -176,7 +174,6 @@ export default {
     getBlockImageUrl(blockId: number) {
       return blocksApi.getBlockImageUrl(blockId)
     },
-    // User management methods
     async fetchUsers() {
       this.usersLoading = true
       this.usersError = null
@@ -248,7 +245,6 @@ export default {
       }
       return labels[role] || role
     },
-    // Video management methods
     async fetchVideos() {
       this.videosLoading = true
       this.videosError = null
@@ -320,7 +316,6 @@ export default {
 
 <template>
   <div class="admin-container">
-    <!-- Tabs -->
     <div class="admin-tabs">
       <button 
         :class="['tab-btn', { active: activeTab === 'blocks' }]"
@@ -342,12 +337,10 @@ export default {
       </button>
     </div>
 
-    <!-- Error message -->
     <div v-if="error || usersError || videosError" class="error-message">
       {{ error || usersError || videosError }}
     </div>
 
-    <!-- Blocks Tab -->
     <div v-if="activeTab === 'blocks'" class="blocks-section">
       <div class="course-header">
         <h1 class="course-title">Управление блоками курса</h1>
@@ -370,8 +363,6 @@ export default {
           <div class="section-header">
             <h2 class="section-title">Блоки курса</h2>
           </div>
-
-          <!-- Add new block form -->
           <div class="add-block-form">
             <h3>Добавить новый блок</h3>
             <div class="form-row">
@@ -385,20 +376,17 @@ export default {
             </div>
           </div>
 
-          <!-- Loading state -->
           <div v-if="loading" class="loading">
             Загрузка блоков...
           </div>
 
-          <!-- Blocks list -->
           <div v-else class="blocks-list">
             <div 
               v-for="(block, index) in blocks" 
               :key="block.id"
               class="block-item"
             >
-              <!-- Block Image Preview -->
-              <div 
+              <div
                 class="block-image-preview" 
                 :style="{ backgroundImage: `url(${getBlockImageUrl(block.id)})` }"
               ></div>
@@ -477,18 +465,15 @@ export default {
       </div>
     </div>
 
-    <!-- Users Tab -->
     <div v-if="activeTab === 'users'" class="users-section">
       <div class="section-header">
         <h2 class="section-title">Управление пользователями</h2>
       </div>
 
-      <!-- Loading state -->
       <div v-if="usersLoading" class="loading">
         Загрузка пользователей...
       </div>
 
-      <!-- Users table -->
       <div v-else class="users-table-container">
         <table class="users-table">
           <thead>
@@ -556,7 +541,6 @@ export default {
           Нет пользователей.
         </div>
 
-        <!-- Pagination -->
         <div v-if="usersPagination.totalPages > 1" class="pagination">
           <button 
             @click="goToUserPage(usersPagination.page - 1)" 
@@ -579,13 +563,11 @@ export default {
       </div>
     </div>
 
-    <!-- Videos Tab -->
     <div v-if="activeTab === 'videos'" class="videos-section">
       <div class="section-header">
         <h2 class="section-title">Управление видео</h2>
       </div>
 
-      <!-- Upload new video form -->
       <div class="add-block-form">
         <h3>Загрузить новое видео</h3>
         <div class="form-row">
@@ -617,12 +599,10 @@ export default {
         </div>
       </div>
 
-      <!-- Loading state -->
       <div v-if="videosLoading" class="loading">
         Загрузка видео...
       </div>
 
-      <!-- Videos list -->
       <div v-else class="videos-list">
         <div 
           v-for="video in videos" 
@@ -673,7 +653,6 @@ export default {
   width: 100%;
 }
 
-/* Tabs */
 .admin-tabs {
   display: flex;
   gap: 10px;
@@ -702,7 +681,6 @@ export default {
   background: #e0e0e0;
 }
 
-/* Error message */
 .error-message {
   background: #ffebee;
   color: #c62828;
@@ -711,7 +689,6 @@ export default {
   margin-bottom: 20px;
 }
 
-/* Course header */
 .course-header {
   margin-bottom: 30px;
 }
@@ -739,7 +716,6 @@ export default {
   margin-bottom: 20px;
 }
 
-/* Content sections */
 .content-section {
   margin: 20px 0;
 }
@@ -758,7 +734,6 @@ export default {
   font-size: 22px;
 }
 
-/* Add block form */
 .add-block-form {
   background: #f8f9fa;
   padding: 20px;
@@ -799,7 +774,6 @@ export default {
   background: #138496;
 }
 
-/* Loading */
 .loading {
   text-align: center;
   padding: 40px;
@@ -807,7 +781,6 @@ export default {
   font-size: 16px;
 }
 
-/* Blocks list */
 .blocks-list {
   display: flex;
   flex-direction: column;
@@ -964,7 +937,6 @@ export default {
   font-size: 13px;
 }
 
-/* Empty state */
 .empty-state {
   text-align: center;
   padding: 40px;
@@ -973,7 +945,6 @@ export default {
   border-radius: 10px;
 }
 
-/* Users section */
 .users-section {
   margin-top: 20px;
 }
@@ -1064,7 +1035,6 @@ export default {
   color: #7b1fa2;
 }
 
-/* Pagination */
 .pagination {
   display: flex;
   justify-content: center;
@@ -1096,7 +1066,6 @@ export default {
   color: #666;
 }
 
-/* Videos section */
 .videos-section {
   margin-top: 20px;
 }

@@ -7,6 +7,7 @@ import CatalogView from '@/views/CatalogView.vue'
 import PromotionsView from '@/views/PromotionsView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import MaterialView from '@/views/MaterialView.vue'
+import HelpView from "@/views/HelpView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -37,6 +38,11 @@ const router = createRouter({
       component: CatalogView,
     },
     {
+      path: '/help',
+      name: 'help',
+      component: HelpView,
+    },
+    {
       path: '/promotions',
       name: 'promotions',
       component: PromotionsView,
@@ -50,6 +56,11 @@ const router = createRouter({
       path: '/material/:id',
       name: 'material',
       component: MaterialView,
+    },
+    {
+      path: '/api/auth/vkCallback',
+      name: 'auth.vkCallback',
+      component: ProfileView,
     },
   ],
 })

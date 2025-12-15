@@ -1,3 +1,11 @@
 h1, h2, h3, h4, h5, h6, li, a, p, input, select, textarea, button, span {
     font-family: 'Roboto Mono', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+h1, h2, h3, h4, h5, h6 {
+    text-align: center;
+}

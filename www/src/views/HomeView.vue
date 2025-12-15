@@ -84,23 +84,19 @@ export default {
           <h2 class="section-title">Материалы курса ({{ blocksCount }})</h2>
           <div class="toggle-icon">{{ isMaterialVisible ? '▼' : '▶' }}</div>
         </div>
-        
-        <!-- Loading state -->
+
         <div v-if="loading" class="loading-state">
           Загрузка материалов...
         </div>
-        
-        <!-- Error state -->
+
         <div v-else-if="error" class="error-state">
           {{ error }}
         </div>
-        
-        <!-- Empty state -->
+
         <div v-else-if="blocks.length === 0" class="empty-state">
           Материалы курса пока не добавлены.
         </div>
-        
-        <!-- Blocks list -->
+
         <div v-else v-show="isMaterialVisible" class="material-list">
           <router-link 
             v-for="block in blocks" 

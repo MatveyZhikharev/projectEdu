@@ -85,7 +85,6 @@ li {
 .menu-link {
   display: flex;
   align-items: center;
-  text-decoration: none;
   color: inherit;
 }
 

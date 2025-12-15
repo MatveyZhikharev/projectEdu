@@ -35,18 +35,12 @@ export interface PageResponse<T> {
 }
 
 export const usersAdminApi = {
-  /**
-   * Get users with pagination
-   */
   getUsers(page: number = 0, size: number = 10) {
     return apiClient.get<PageResponse<User>>('/admin/users', {
       params: { page, size },
     })
   },
 
-  /**
-   * Update user
-   */
   updateUser(userId: string, data: UserUpdateDto) {
     return apiClient.patch<User>(`/admin/users/${userId}`, data)
   },

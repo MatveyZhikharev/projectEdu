@@ -1,6 +1,6 @@
 <script lang="ts">
-import { authApi } from '@/api/auth'
-import { blocksApi, type BlockResponse } from '@/api/blocks'
+import {authApi} from '@/api/auth'
+import {blocksApi, type BlockResponse} from '@/api/blocks'
 
 interface AuthStatusResponse {
   status: boolean
@@ -12,6 +12,13 @@ interface AuthStatusResponse {
   }
 }
 
+interface UserResponse {
+  firstName?: string
+  lastName?: string
+  email?: string
+  vkId?: number
+}
+
 export default {
   data() {
     return {
@@ -19,7 +26,7 @@ export default {
       loading: true,
       blocksLoading: false,
       blocks: [] as BlockResponse[],
-      userData: null as AuthStatusResponse['user'] | null
+      userData: null as AuthStatusResponse['user'] | null,
     }
   },
   computed: {
@@ -38,6 +45,7 @@ export default {
     if (this.isAuthenticated) {
       await this.fetchBlocks()
     }
+    await this.handleVkCallback();
   },
   methods: {
     async checkAuth() {
@@ -45,8 +53,19 @@ export default {
         const response = await authApi.getAuthStatus()
         const data = response.data as AuthStatusResponse
         this.isAuthenticated = data.status
-        if (data.user) {
-          this.userData = data.user
+      } catch (error) {
+        this.isAuthenticated = false
+      } finally {
+        this.loading = false
+      }
+      await this.getUser()
+    },
+    async getUser() {
+      try {
+        const response = await authApi.getUser()
+        const data = response.data as UserResponse;
+        if (data !== null) {
+          this.userData = data;
         }
       } catch (error) {
         this.isAuthenticated = false
@@ -72,6 +91,35 @@ export default {
       } catch (error) {
         console.error('Ошибка получения ссылки VK:', error)
       }
+    },
+    async handleVkCallback() {
+      try {
+        const query = this.$route.query as {
+          code?: string
+          state?: string
+          device_id?: string
+        }
+
+        const {code, state, device_id} = query
+
+        if (!code) {
+          throw new Error('Authorization code is missing')
+        }
+
+        const response = await authApi.getVkCallback(code, state, device_id);
+
+        // this.success = true
+
+        setTimeout(() => {
+          this.$router.push('/dashboard')
+        }, 2000)
+
+      } catch (err: any) {
+        console.error('VK callback error:', err)
+        // this.error = err.response?.data?.message || err.message || 'Authentication failed'
+      } finally {
+        this.loading = false
+      }
     }
   }
 }
@@ -83,7 +131,7 @@ export default {
       <div class="loading-spinner"></div>
       <p>Загрузка...</p>
     </div>
-    
+
     <div v-else-if="!isAuthenticated" class="auth-section">
       <div class="auth-content">
         <div class="auth-icon">👤</div>
@@ -95,9 +143,8 @@ export default {
         </button>
       </div>
     </div>
-    
+
     <div v-else class="profile-view">
-      <!-- Profile header -->
       <div class="profile-header">
         <div class="profile-avatar">
           <span class="avatar-icon">👤</span>
@@ -109,7 +156,6 @@ export default {
         </div>
       </div>
 
-      <!-- Stats section -->
       <div class="profile-stats">
         <div class="stat-card">
           <span class="stat-number">{{ blocksCount }}</span>
@@ -125,24 +171,23 @@ export default {
         </div>
       </div>
 
-      <!-- Activity section -->
       <div class="profile-section">
         <h2 class="section-title">Мои курсы</h2>
-        
+
         <div v-if="blocksLoading" class="section-loading">
           Загрузка...
         </div>
-        
+
         <div v-else-if="blocks.length === 0" class="empty-courses">
           <p>У вас пока нет курсов</p>
           <router-link to="/catalog" class="browse-link">Перейти в каталог</router-link>
         </div>
-        
+
         <div v-else class="courses-preview">
-          <div 
-            v-for="block in blocks.slice(0, 3)" 
-            :key="block.id"
-            class="course-preview-item"
+          <div
+              v-for="block in blocks.slice(0, 3)"
+              :key="block.id"
+              class="course-preview-item"
           >
             <div class="preview-info">
               <h4>{{ block.title }}</h4>
@@ -157,14 +202,13 @@ export default {
               <span class="mini-progress-text">0%</span>
             </div>
           </div>
-          
+
           <router-link v-if="blocks.length > 3" to="/my-courses" class="see-all-link">
             Смотреть все курсы →
           </router-link>
         </div>
       </div>
 
-      <!-- Account settings placeholder -->
       <div class="profile-section">
         <h2 class="section-title">Настройки аккаунта</h2>
         <div class="settings-list">
@@ -278,7 +322,6 @@ export default {
   font-size: 14px;
 }
 
-/* Profile view */
 .profile-view {
   max-width: 900px;
   margin: 0 auto;
@@ -330,7 +373,6 @@ export default {
   font-weight: 500;
 }
 
-/* Stats */
 .profile-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -359,7 +401,6 @@ export default {
   color: #666;
 }
 
-/* Sections */
 .profile-section {
   background: white;
   padding: 24px;
@@ -467,7 +508,6 @@ export default {
   text-decoration: underline;
 }
 
-/* Settings */
 .settings-list {
   display: flex;
   flex-direction: column;

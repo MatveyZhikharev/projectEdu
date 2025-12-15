@@ -27,44 +27,26 @@ export interface ChunkResponseDTO {
 }
 
 export const videoApi = {
-  /**
-   * Get all videos
-   */
   getAllVideos() {
     return apiClient.get<VideoDTO[]>('/v1/videos')
   },
 
-  /**
-   * Get video info by ID
-   */
   getVideoInfo(id: number) {
     return apiClient.get<VideoInfoDTO>(`/v1/videos/${id}`)
   },
 
-  /**
-   * Get encrypted video chunk
-   */
   getVideoChunk(id: number, chunkIndex: number) {
     return apiClient.get<ChunkResponseDTO>(`/v1/videos/${id}/stream/${chunkIndex}`)
   },
 
-  /**
-   * Get video MIME type
-   */
   getVideoContentType(id: number) {
     return apiClient.get<string>(`/v1/videos/${id}/content-type`)
   },
 
-  /**
-   * Get video stream URL (for direct playback)
-   */
   getVideoStreamUrl(id: number) {
     return `/api/v1/videos/${id}/stream`
   },
 
-  /**
-   * Upload a new video
-   */
   uploadVideo(file: File, title: string, description?: string) {
     const formData = new FormData()
     formData.append('file', file)

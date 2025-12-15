@@ -50,27 +50,23 @@ export default {
       </div>
     </div>
 
-    <!-- Loading state -->
     <div v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
       <p>Загрузка каталога...</p>
     </div>
 
-    <!-- Error state -->
     <div v-else-if="error" class="error-state">
       <div class="error-icon">⚠️</div>
       <p>{{ error }}</p>
       <button @click="fetchBlocks" class="retry-btn">Попробовать снова</button>
     </div>
 
-    <!-- Empty state -->
     <div v-else-if="blocks.length === 0" class="empty-state">
       <div class="empty-icon">📚</div>
       <h2>Курсы пока не добавлены</h2>
       <p>Скоро здесь появятся интересные курсы!</p>
     </div>
 
-    <!-- Courses grid -->
     <div v-else class="courses-grid">
       <router-link 
         v-for="block in blocks" 
@@ -145,7 +141,6 @@ export default {
   font-weight: 500;
 }
 
-/* Loading state */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -171,7 +166,6 @@ export default {
   }
 }
 
-/* Error state */
 .error-state {
   display: flex;
   flex-direction: column;
@@ -207,7 +201,6 @@ export default {
   background: #0056b3;
 }
 
-/* Empty state */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -234,7 +227,6 @@ export default {
   margin: 0;
 }
 
-/* Courses grid */
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

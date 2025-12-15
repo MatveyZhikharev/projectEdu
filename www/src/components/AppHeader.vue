@@ -9,9 +9,12 @@
     </div>
     <nav class="header-nav">
       <div class="header-link">Прогресс курса</div>
-      <div class="header-link">Материалы</div>
-      <div class="header-link">Обсуждения</div>
-      <div class="header-link">Помощь</div>
+      <RouterLink to="help" class="menu-link">
+        <div class="header-link">Помощь</div>
+      </RouterLink>
+      <RouterLink to="about" class="menu-link">
+        <div class="header-link">О нас</div>
+      </RouterLink>
     </nav>
     <div>
       <input type="text" name="query" id="search" placeholder="Поиск..." class="search-input">
@@ -27,10 +30,12 @@ header {
   padding: 20px 75px;
   box-shadow: 0px 10px 25px #f1f1f1;
 }
+
 .header-nav {
   display: flex;
   gap: 75px;
 }
+
 .header-link {
   font-size: 16px;
   font-family: 'Roboto Mono', Tahoma, Geneva, Verdana, sans-serif;

@@ -17,7 +17,6 @@ export default {
       return this.blocks.length
     },
     completedCount(): number {
-      // No user progress API endpoint available yet - will be 0 until backend provides this
       return 0
     },
     inProgressCount(): number {
@@ -71,13 +70,11 @@ export default {
 
 <template>
   <div class="my-courses-container">
-    <!-- Auth loading -->
     <div v-if="authLoading" class="loading-state">
       <div class="loading-spinner"></div>
       <p>Загрузка...</p>
     </div>
 
-    <!-- Not authenticated -->
     <div v-else-if="!isAuthenticated" class="auth-prompt">
       <div class="auth-content">
         <div class="auth-icon">🔒</div>
@@ -90,7 +87,6 @@ export default {
       </div>
     </div>
 
-    <!-- Authenticated view -->
     <div v-else class="courses-view">
       <div class="courses-header">
         <h1 class="courses-title">Мои курсы</h1>
@@ -112,19 +108,16 @@ export default {
         </div>
       </div>
 
-      <!-- Loading state -->
       <div v-if="loading" class="loading-state">
         <div class="loading-spinner"></div>
         <p>Загрузка курсов...</p>
       </div>
 
-      <!-- Error state -->
       <div v-else-if="error" class="error-state">
         <p>{{ error }}</p>
         <button @click="fetchBlocks" class="retry-btn">Попробовать снова</button>
       </div>
 
-      <!-- Empty state -->
       <div v-else-if="blocks.length === 0" class="empty-state">
         <div class="empty-icon">📚</div>
         <h2>У вас пока нет курсов</h2>
@@ -132,7 +125,6 @@ export default {
         <router-link to="/catalog" class="browse-btn">Перейти в каталог</router-link>
       </div>
 
-      <!-- Courses list -->
       <div v-else class="courses-list">
         <div 
           v-for="block in blocks" 
@@ -165,7 +157,6 @@ export default {
   width: 100%;
 }
 
-/* Loading state */
 .loading-state {
   display: flex;
   flex-direction: column;
@@ -191,7 +182,6 @@ export default {
   }
 }
 
-/* Auth prompt */
 .auth-prompt {
   display: flex;
   justify-content: center;
@@ -248,7 +238,6 @@ export default {
   font-size: 14px;
 }
 
-/* Courses view */
 .courses-header {
   text-align: center;
   margin-bottom: 40px;
@@ -293,7 +282,6 @@ export default {
   color: #666;
 }
 
-/* Error state */
 .error-state {
   text-align: center;
   padding: 40px;
@@ -310,7 +298,6 @@ export default {
   margin-top: 16px;
 }
 
-/* Empty state */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -351,7 +338,6 @@ export default {
   background: #0056b3;
 }
 
-/* Courses list */
 .courses-list {
   display: flex;
   flex-direction: column;

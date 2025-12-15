@@ -9,23 +9,14 @@ export interface BlockResponse {
 }
 
 export const blocksApi = {
-  /**
-   * Get all published blocks
-   */
   getAllAvailableBlocks() {
     return apiClient.get<BlockResponse[]>('/blocks')
   },
 
-  /**
-   * Get block image URL
-   */
   getBlockImageUrl(blockId: number) {
     return `/api/blocks/${blockId}/image`
   },
 
-  /**
-   * Get block video URL
-   */
   getBlockVideoUrl(blockId: number) {
     return `/api/blocks/${blockId}/video`
   },
