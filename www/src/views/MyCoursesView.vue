@@ -1,18 +1,25 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse } from '@/api/blocks'
-import { authApi } from '@/api/auth'
+import { useUserStore } from '@/stores/user'
 
 export default {
   data() {
     return {
-      isAuthenticated: false,
-      authLoading: true,
       loading: false,
       error: null as string | null,
       blocks: [] as BlockResponse[]
     }
   },
   computed: {
+    userStore() {
+      return useUserStore()
+    },
+    isAuthenticated(): boolean {
+      return this.userStore.isAuthenticated
+    },
+    authLoading(): boolean {
+      return this.userStore.loading
+    },
     blocksCount(): number {
       return this.blocks.length
     },
@@ -24,22 +31,17 @@ export default {
     }
   },
   async mounted() {
-    await this.checkAuth()
+    // Initialize store from localStorage
+    this.userStore.initFromStorage()
+    
+    // Check auth status from API
+    await this.userStore.checkAuthStatus()
+    
     if (this.isAuthenticated) {
       await this.fetchBlocks()
     }
   },
   methods: {
-    async checkAuth() {
-      try {
-        const response = await authApi.getAuthStatus()
-        this.isAuthenticated = response.data.status
-      } catch (error) {
-        this.isAuthenticated = false
-      } finally {
-        this.authLoading = false
-      }
-    },
     async fetchBlocks() {
       this.loading = true
       this.error = null
@@ -55,8 +57,7 @@ export default {
     },
     async handleVkLogin() {
       try {
-        const response = await authApi.getVkAuthUrl()
-        window.location.href = response.data.url
+        await this.userStore.loginWithVk()
       } catch (error) {
         console.error('Ошибка получения ссылки VK:', error)
       }

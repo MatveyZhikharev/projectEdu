@@ -1,78 +1,49 @@
 <script lang="ts">
-import {authApi} from '@/api/auth'
-import {blocksApi, type BlockResponse} from '@/api/blocks'
-
-interface AuthStatusResponse {
-  status: boolean
-  user?: {
-    firstName?: string
-    lastName?: string
-    email?: string
-    vkId?: number
-  }
-}
-
-interface UserResponse {
-  firstName?: string
-  lastName?: string
-  email?: string
-  vkId?: number
-}
+import { useUserStore } from '@/stores/user'
+import { blocksApi, type BlockResponse } from '@/api/blocks'
 
 export default {
   data() {
     return {
-      isAuthenticated: false,
-      loading: true,
       blocksLoading: false,
       blocks: [] as BlockResponse[],
-      userData: null as AuthStatusResponse['user'] | null,
     }
   },
   computed: {
-    blocksCount(): number {
-      return this.blocks.length
+    userStore() {
+      return useUserStore()
+    },
+    isAuthenticated(): boolean {
+      return this.userStore.isAuthenticated
+    },
+    loading(): boolean {
+      return this.userStore.loading
     },
     displayName(): string {
-      if (this.userData?.firstName || this.userData?.lastName) {
-        return `${this.userData.firstName || ''} ${this.userData.lastName || ''}`.trim()
-      }
-      return 'Пользователь'
+      return this.userStore.displayName
+    },
+    userEmail(): string | undefined {
+      return this.userStore.userEmail
+    },
+    blocksCount(): number {
+      return this.blocks.length
     }
   },
   async mounted() {
-    await this.checkAuth()
+    // Initialize store from localStorage
+    this.userStore.initFromStorage()
+    
+    // Check if we have a VK callback
+    await this.handleVkCallback()
+    
+    // Check auth status from API
+    await this.userStore.checkAuthStatus()
+    
     if (this.isAuthenticated) {
       await this.fetchBlocks()
     }
-    await this.handleVkCallback();
   },
   methods: {
-    async checkAuth() {
-      try {
-        const response = await authApi.getAuthStatus()
-        const data = response.data as AuthStatusResponse
-        this.isAuthenticated = data.status
-      } catch (error) {
-        this.isAuthenticated = false
-      } finally {
-        this.loading = false
-      }
-      await this.getUser()
-    },
-    async getUser() {
-      try {
-        const response = await authApi.getUser()
-        const data = response.data as UserResponse;
-        if (data !== null) {
-          this.userData = data;
-        }
-      } catch (error) {
-        this.isAuthenticated = false
-      } finally {
-        this.loading = false
-      }
-    },
     async fetchBlocks() {
       this.blocksLoading = true
       try {
@@ -86,39 +57,31 @@ export default {
     },
     async handleVkLogin() {
       try {
-        const response = await authApi.getVkAuthUrl()
-        window.location.href = response.data.url
+        await this.userStore.loginWithVk()
       } catch (error) {
         console.error('Ошибка получения ссылки VK:', error)
       }
     },
     async handleVkCallback() {
+      const query = this.$route.query as {
+        code?: string
+        state?: string
+        device_id?: string
+      }
+
+      const { code, state, device_id } = query
+
+      if (!code) {
+        return
+      }
+
       try {
-        const query = this.$route.query as {
-          code?: string
-          state?: string
-          device_id?: string
-        }
-
-        const {code, state, device_id} = query
-
-        if (!code) {
-          throw new Error('Authorization code is missing')
-        }
-
-        const response = await authApi.getVkCallback(code, state, device_id);
-
-        // this.success = true
-
-        setTimeout(() => {
-          this.$router.push('/dashboard')
-        }, 2000)
-
+        await this.userStore.handleVkCallback(code, state, device_id)
+        
+        // Clear URL parameters after successful callback
+        this.$router.replace({ path: '/profile', query: {} })
       } catch (err: any) {
         console.error('VK callback error:', err)
-        // this.error = err.response?.data?.message || err.message || 'Authentication failed'
-      } finally {
-        this.loading = false
       }
     }
   }
@@ -151,7 +114,7 @@ export default {
         </div>
         <div class="profile-info">
           <h1 class="profile-name">{{ displayName }}</h1>
-          <p v-if="userData?.email" class="profile-email">{{ userData.email }}</p>
+          <p v-if="userEmail" class="profile-email">{{ userEmail }}</p>
           <span class="profile-badge">Студент</span>
         </div>
       </div>
