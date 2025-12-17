@@ -1,7 +1,7 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blocks'
 import { useUserStore } from '@/stores/user'
-import { EncryptedVideoPlayer, revokeVideoBlobUrl } from '@/utils/videoDecryption'
+import { revokeVideoBlobUrl } from '@/utils/videoDecryption'
 
 export default {
   data() {
@@ -17,7 +17,6 @@ export default {
       // Chunked streaming state
       isChunkedStreaming: false,
       chunkLoadingProgress: 0,
-      videoPlayer: null as EncryptedVideoPlayer | null,
       useAdminStream: false, // Use admin direct stream (for admins only)
     }
   },
@@ -126,9 +125,6 @@ export default {
       this.chunkLoadingProgress = 0
       
       try {
-        // Get the decryption key from the API
-        // NOTE: The backend needs to provide the key endpoint
-        // For now, we'll try to load chunks and see if decryption works
         const totalChunks = this.videoInfo.totalChunks
         const mimeType = this.videoInfo.mimeType || 'video/mp4'
         
@@ -143,42 +139,47 @@ export default {
             // Check if we have IV for decryption
             if (chunk.iv && chunk.encryptedData) {
               // NOTE: Decryption key must be provided by backend
-              // This is a placeholder - backend needs to send the key
-              console.log(`Chunk ${i} received with IV, awaiting decryption key from backend`)
+              // Currently the backend doesn't expose the decryption key
+              // We need an endpoint like GET /api/video/{blockId}/key
+              console.log(`Chunk ${i} received with IV, but decryption key is not available from backend`)
               
-              // For now, we cannot decrypt without the key
-              // The backend needs to add an endpoint to get the key
-              // e.g., GET /api/video/{blockId}/key
-              this.videoError = 'Расшифровка видео требует обновления на сервере. Попробуйте админ-стриминг.'
+              // Fallback to admin stream since we can't decrypt
+              this.videoError = 'Расшифровка видео требует обновления на сервере. Используется прямой стриминг.'
               this.isChunkedStreaming = false
-              
-              // Fallback to admin stream for testing
               this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
               return
-            } else {
-              // No encryption - use raw data
-              // This shouldn't happen based on backend code, but handle it
-              console.log(`Chunk ${i} has no IV, treating as unencrypted`)
+            } else if (chunk.encryptedData) {
+              // Encrypted data without IV - backend bug, use fallback
+              console.log(`Chunk ${i} has encrypted data but no IV`)
+              this.videoError = 'Ошибка формата видео данных. Используется прямой стриминг.'
+              this.isChunkedStreaming = false
+              this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
+              return
             }
+            // If we somehow get unencrypted data, we would add it here
+            // But based on backend code, all chunks should be encrypted
             
             this.chunkLoadingProgress = Math.round(((i + 1) / totalChunks) * 100)
           } catch (chunkError) {
             console.error(`Error loading chunk ${i}:`, chunkError)
             // If chunk loading fails, fallback to admin stream
-            this.videoError = 'Ошибка загрузки видео чанков. Попробуйте перезагрузить страницу.'
+            this.videoError = 'Ошибка загрузки видео чанков. Используется прямой стриминг.'
             this.isChunkedStreaming = false
-            
-            // Fallback: try admin direct stream
             this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
             return
           }
         }
         
-        // Create video blob from chunks
+        // Create video blob from successfully loaded chunks
         if (chunks.length > 0) {
           const blobParts = chunks.map(chunk => chunk.buffer as ArrayBuffer)
           const blob = new Blob(blobParts, { type: mimeType })
           this.videoUrl = URL.createObjectURL(blob)
+        } else {
+          // No chunks loaded - use admin stream fallback
+          this.videoError = 'Не удалось загрузить видео чанки. Используется прямой стриминг.'
+          this.isChunkedStreaming = false
+          this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
         }
         
       } catch (error) {
@@ -195,10 +196,9 @@ export default {
       if (this.videoUrl && this.videoUrl.startsWith('blob:')) {
         revokeVideoBlobUrl(this.videoUrl)
       }
-      if (this.videoPlayer) {
-        this.videoPlayer.destroy()
-        this.videoPlayer = null
-      }
+      this.videoUrl = null
+      this.isChunkedStreaming = false
+      this.chunkLoadingProgress = 0
     },
 
     async handleVkLogin() {
