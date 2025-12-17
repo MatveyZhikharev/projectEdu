@@ -1,26 +1,8 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blocks'
+import { testsApi, type TestData, type Question, type Answer } from '@/api/tests'
 import { useUserStore } from '@/stores/user'
 import { revokeVideoBlobUrl } from '@/utils/videoDecryption'
-
-// Test related interfaces
-interface Answer {
-  id: number
-  answerText: string
-  isRight?: boolean
-}
-
-interface Question {
-  id: number
-  questionText: string
-  answers: Answer[]
-}
-
-interface TestData {
-  id: number
-  passPercent: number
-  questions: Question[]
-}
 
 export default {
   data() {
@@ -252,55 +234,24 @@ export default {
     },
     
     // Test methods
-    handleStartTest() {
-      // Generate mock test data based on testId
-      // In production, this would fetch from API: GET /api/tests/{testId}
+    async handleStartTest() {
       if (!this.block?.testId) return
       
       this.testLoading = true
       
-      // Simulate API delay
-      setTimeout(() => {
-        // Mock test data - in production this comes from backend
-        this.testData = {
-          id: this.block!.testId!,
-          passPercent: 70,
-          questions: [
-            {
-              id: 1,
-              questionText: 'Какой инструмент чаще всего используется для откручивания винтов?',
-              answers: [
-                { id: 1, answerText: 'Молоток', isRight: false },
-                { id: 2, answerText: 'Отвёртка', isRight: true },
-                { id: 3, answerText: 'Пассатижи', isRight: false },
-                { id: 4, answerText: 'Гаечный ключ', isRight: false },
-              ]
-            },
-            {
-              id: 2,
-              questionText: 'Что нужно сделать перед началом ремонта электроприбора?',
-              answers: [
-                { id: 5, answerText: 'Включить его в сеть', isRight: false },
-                { id: 6, answerText: 'Отключить от электропитания', isRight: true },
-                { id: 7, answerText: 'Намочить руки', isRight: false },
-                { id: 8, answerText: 'Ничего не делать', isRight: false },
-              ]
-            },
-            {
-              id: 3,
-              questionText: 'Для чего используется мультиметр?',
-              answers: [
-                { id: 9, answerText: 'Для измерения давления', isRight: false },
-                { id: 10, answerText: 'Для измерения электрических параметров', isRight: true },
-                { id: 11, answerText: 'Для резки проводов', isRight: false },
-                { id: 12, answerText: 'Для пайки', isRight: false },
-              ]
-            }
-          ]
-        }
-        this.testLoading = false
+      try {
+        // Try to fetch test data from API
+        const response = await testsApi.getTest(this.block.testId)
+        this.testData = response.data
         this.testStarted = true
-      }, 500)
+      } catch {
+        // API not available - use mock data for development
+        console.log('Test API not available, using mock data')
+        this.testData = testsApi.getMockTestData(this.block.testId)
+        this.testStarted = true
+      } finally {
+        this.testLoading = false
+      }
     },
     
     selectAnswer(questionId: number, answerId: number) {
@@ -469,7 +420,7 @@ export default {
             <div class="test-info">
               <h3>Тест по материалу</h3>
               <p>Проверьте свои знания после изучения урока</p>
-              <p class="test-hint">Для прохождения теста необходимо набрать минимум 70% правильных ответов</p>
+              <p class="test-hint">Проходной балл будет указан после начала теста</p>
             </div>
             <button class="start-test-btn" @click="handleStartTest">Начать тест</button>
           </div>
