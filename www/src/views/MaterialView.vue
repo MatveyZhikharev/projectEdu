@@ -3,6 +3,25 @@ import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blo
 import { useUserStore } from '@/stores/user'
 import { revokeVideoBlobUrl } from '@/utils/videoDecryption'
 
+// Test related interfaces
+interface Answer {
+  id: number
+  answerText: string
+  isRight?: boolean
+}
+
+interface Question {
+  id: number
+  questionText: string
+  answers: Answer[]
+}
+
+interface TestData {
+  id: number
+  passPercent: number
+  questions: Question[]
+}
+
 export default {
   data() {
     return {
@@ -18,6 +37,13 @@ export default {
       isChunkedStreaming: false,
       chunkLoadingProgress: 0,
       useAdminStream: false, // Use admin direct stream (for admins only)
+      // Test state
+      testData: null as TestData | null,
+      testLoading: false,
+      testStarted: false,
+      selectedAnswers: {} as Record<number, number>, // questionId -> answerId
+      testSubmitted: false,
+      testResult: null as { score: number; total: number; passed: boolean } | null,
     }
   },
   computed: {
@@ -51,6 +77,19 @@ export default {
     isAdmin(): boolean {
       // Check if user has admin role (stored in user store)
       return this.userStore.user?.role === 'ADMIN'
+    },
+    // Test block check
+    isTestBlock(): boolean {
+      return this.block?.testId != null
+    },
+    // Pure test block (test without video)
+    isPureTestBlock(): boolean {
+      return this.isTestBlock && !this.hasVideo
+    },
+    // Check if all questions are answered
+    allQuestionsAnswered(): boolean {
+      if (!this.testData) return false
+      return this.testData.questions.every(q => this.selectedAnswers[q.id] !== undefined)
     }
   },
   async mounted() {
@@ -211,9 +250,93 @@ export default {
     goBack() {
       this.$router.back()
     },
+    
+    // Test methods
     handleStartTest() {
-      alert('Функционал тестирования будет доступен в ближайшее время')
+      // Generate mock test data based on testId
+      // In production, this would fetch from API: GET /api/tests/{testId}
+      if (!this.block?.testId) return
+      
+      this.testLoading = true
+      
+      // Simulate API delay
+      setTimeout(() => {
+        // Mock test data - in production this comes from backend
+        this.testData = {
+          id: this.block!.testId!,
+          passPercent: 70,
+          questions: [
+            {
+              id: 1,
+              questionText: 'Какой инструмент чаще всего используется для откручивания винтов?',
+              answers: [
+                { id: 1, answerText: 'Молоток', isRight: false },
+                { id: 2, answerText: 'Отвёртка', isRight: true },
+                { id: 3, answerText: 'Пассатижи', isRight: false },
+                { id: 4, answerText: 'Гаечный ключ', isRight: false },
+              ]
+            },
+            {
+              id: 2,
+              questionText: 'Что нужно сделать перед началом ремонта электроприбора?',
+              answers: [
+                { id: 5, answerText: 'Включить его в сеть', isRight: false },
+                { id: 6, answerText: 'Отключить от электропитания', isRight: true },
+                { id: 7, answerText: 'Намочить руки', isRight: false },
+                { id: 8, answerText: 'Ничего не делать', isRight: false },
+              ]
+            },
+            {
+              id: 3,
+              questionText: 'Для чего используется мультиметр?',
+              answers: [
+                { id: 9, answerText: 'Для измерения давления', isRight: false },
+                { id: 10, answerText: 'Для измерения электрических параметров', isRight: true },
+                { id: 11, answerText: 'Для резки проводов', isRight: false },
+                { id: 12, answerText: 'Для пайки', isRight: false },
+              ]
+            }
+          ]
+        }
+        this.testLoading = false
+        this.testStarted = true
+      }, 500)
     },
+    
+    selectAnswer(questionId: number, answerId: number) {
+      if (this.testSubmitted) return
+      this.selectedAnswers = { ...this.selectedAnswers, [questionId]: answerId }
+    },
+    
+    submitTest() {
+      if (!this.testData || !this.allQuestionsAnswered) return
+      
+      let correctCount = 0
+      const total = this.testData.questions.length
+      
+      this.testData.questions.forEach(question => {
+        const selectedAnswerId = this.selectedAnswers[question.id]
+        const correctAnswer = question.answers.find(a => a.isRight)
+        if (correctAnswer && selectedAnswerId === correctAnswer.id) {
+          correctCount++
+        }
+      })
+      
+      const score = Math.round((correctCount / total) * 100)
+      const passed = score >= this.testData.passPercent
+      
+      this.testResult = { score, total: correctCount, passed }
+      this.testSubmitted = true
+    },
+    
+    resetTest() {
+      this.testStarted = false
+      this.testSubmitted = false
+      this.selectedAnswers = {}
+      this.testResult = null
+      this.testData = null
+    },
+    
     handleMarkComplete() {
       alert('Прогресс сохранён! (Функционал будет полностью доступен позже)')
     }
@@ -335,14 +458,99 @@ export default {
         </section>
 
         <section v-if="block.testId" class="content-section test-section">
-          <h2 class="section-title">Тестирование</h2>
-          <div class="test-card">
+          <h2 class="section-title">
+            Тестирование
+            <span v-if="isPureTestBlock" class="test-type-badge">Блок-тест</span>
+          </h2>
+          
+          <!-- Test not started -->
+          <div v-if="!testStarted && !testLoading" class="test-card">
             <div class="test-icon">📝</div>
             <div class="test-info">
               <h3>Тест по материалу</h3>
               <p>Проверьте свои знания после изучения урока</p>
+              <p class="test-hint">Для прохождения теста необходимо набрать минимум 70% правильных ответов</p>
             </div>
             <button class="start-test-btn" @click="handleStartTest">Начать тест</button>
+          </div>
+          
+          <!-- Test loading -->
+          <div v-if="testLoading" class="test-loading">
+            <div class="loading-spinner small"></div>
+            <p>Загрузка вопросов...</p>
+          </div>
+          
+          <!-- Test in progress -->
+          <div v-if="testStarted && testData && !testSubmitted" class="test-content">
+            <div class="test-progress">
+              <span>Вопросов: {{ Object.keys(selectedAnswers).length }} / {{ testData.questions.length }}</span>
+              <span class="pass-requirement">Проходной балл: {{ testData.passPercent }}%</span>
+            </div>
+            
+            <div class="questions-list">
+              <div v-for="(question, index) in testData.questions" :key="question.id" class="question-card">
+                <div class="question-header">
+                  <span class="question-number">Вопрос {{ index + 1 }}</span>
+                  <span v-if="selectedAnswers[question.id]" class="question-answered">✓ Отвечено</span>
+                </div>
+                <p class="question-text">{{ question.questionText }}</p>
+                
+                <div class="answers-list">
+                  <label 
+                    v-for="answer in question.answers" 
+                    :key="answer.id"
+                    class="answer-option"
+                    :class="{ selected: selectedAnswers[question.id] === answer.id }"
+                  >
+                    <input 
+                      type="radio" 
+                      :name="'question-' + question.id"
+                      :value="answer.id"
+                      :checked="selectedAnswers[question.id] === answer.id"
+                      @change="selectAnswer(question.id, answer.id)"
+                    >
+                    <span class="answer-text">{{ answer.answerText }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div class="test-actions">
+              <button class="cancel-test-btn" @click="resetTest">Отменить</button>
+              <button 
+                class="submit-test-btn" 
+                :disabled="!allQuestionsAnswered"
+                @click="submitTest"
+              >
+                Завершить тест
+              </button>
+            </div>
+          </div>
+          
+          <!-- Test result -->
+          <div v-if="testSubmitted && testResult" class="test-result">
+            <div class="result-icon" :class="{ passed: testResult.passed, failed: !testResult.passed }">
+              {{ testResult.passed ? '🎉' : '😔' }}
+            </div>
+            <h3 class="result-title">
+              {{ testResult.passed ? 'Тест пройден!' : 'Тест не пройден' }}
+            </h3>
+            <div class="result-score">
+              <div class="score-circle" :class="{ passed: testResult.passed }">
+                {{ testResult.score }}%
+              </div>
+              <p class="score-details">
+                Правильных ответов: {{ testResult.total }} из {{ testData?.questions.length }}
+              </p>
+            </div>
+            <div class="result-actions">
+              <button class="retry-test-btn" @click="resetTest">
+                {{ testResult.passed ? 'Пройти снова' : 'Попробовать ещё раз' }}
+              </button>
+              <button v-if="testResult.passed" class="continue-btn" @click="goBack">
+                Продолжить обучение
+              </button>
+            </div>
           </div>
         </section>
 
@@ -860,5 +1068,281 @@ export default {
   color: #856404;
   border-radius: 8px;
   font-size: 14px;
+}
+
+/* Test styling */
+.test-type-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.test-hint {
+  font-size: 13px;
+  color: #888;
+  margin-top: 8px;
+}
+
+.test-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+}
+
+.test-loading p {
+  margin-top: 16px;
+  color: #666;
+}
+
+.test-content {
+  padding: 20px 0;
+}
+
+.test-progress {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #444;
+}
+
+.pass-requirement {
+  color: #17a2b8;
+  font-weight: 500;
+}
+
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.question-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.question-number {
+  font-size: 13px;
+  color: #007bff;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.question-answered {
+  font-size: 12px;
+  color: #28a745;
+  font-weight: 500;
+}
+
+.question-text {
+  font-size: 18px;
+  font-weight: 500;
+  color: #1a1a1a;
+  margin: 0 0 20px 0;
+  line-height: 1.5;
+}
+
+.answers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.answer-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.answer-option:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+}
+
+.answer-option.selected {
+  background: #e7f3ff;
+  border-color: #007bff;
+}
+
+.answer-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #007bff;
+}
+
+.answer-text {
+  font-size: 15px;
+  color: #333;
+}
+
+.test-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.cancel-test-btn {
+  padding: 14px 28px;
+  background: #f5f5f5;
+  color: #666;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-test-btn:hover {
+  background: #e0e0e0;
+}
+
+.submit-test-btn {
+  padding: 14px 32px;
+  background: #17a2b8;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.submit-test-btn:hover {
+  background: #138496;
+}
+
+.submit-test-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Test result */
+.test-result {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.result-icon {
+  font-size: 72px;
+  margin-bottom: 20px;
+}
+
+.result-icon.passed {
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.result-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 24px 0;
+}
+
+.result-icon.passed + .result-title {
+  color: #28a745;
+}
+
+.result-icon.failed + .result-title {
+  color: #dc3545;
+}
+
+.result-score {
+  margin-bottom: 32px;
+}
+
+.score-circle {
+  width: 120px;
+  height: 120px;
+  border-radius: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0 auto 16px;
+  background: #f0f0f0;
+  color: #dc3545;
+}
+
+.score-circle.passed {
+  background: #d4edda;
+  color: #28a745;
+}
+
+.score-details {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.retry-test-btn {
+  padding: 14px 28px;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-test-btn:hover {
+  background: #e0e0e0;
+}
+
+.continue-btn {
+  padding: 14px 28px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.continue-btn:hover {
+  background: #218838;
 }
 </style>

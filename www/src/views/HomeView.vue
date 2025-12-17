@@ -1,9 +1,10 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blocks'
 
-interface BlockWithVideo extends BlockResponse {
+interface BlockWithMedia extends BlockResponse {
   hasVideo?: boolean
   videoInfo?: VideoInfoResponse | null
+  isTestBlock?: boolean // Block is a test (has testId but no video)
 }
 
 export default {
@@ -12,7 +13,7 @@ export default {
       isMaterialVisible: true,
       loading: false,
       error: null as string | null,
-      blocks: [] as BlockWithVideo[]
+      blocks: [] as BlockWithMedia[]
     }
   },
   computed: {
@@ -32,7 +33,13 @@ export default {
       this.error = null
       try {
         const response = await blocksApi.getAllAvailableBlocks()
-        this.blocks = response.data.map(block => ({ ...block, hasVideo: false, videoInfo: null }))
+        this.blocks = response.data.map(block => ({ 
+          ...block, 
+          hasVideo: false, 
+          videoInfo: null,
+          // Block is a test if it has testId
+          isTestBlock: block.testId != null
+        }))
         
         // Check video availability for each block
         await this.checkVideoForBlocks()
@@ -62,8 +69,12 @@ export default {
     getBlockImageUrl(blockId: number) {
       return blocksApi.getBlockImageUrl(blockId)
     },
-    getVideoDuration(block: BlockWithVideo): string {
+    getVideoDuration(block: BlockWithMedia): string {
       return block.videoInfo?.formattedDuration || ''
+    },
+    // Check if block is a pure test block (has test but no video)
+    isPureTestBlock(block: BlockWithMedia): boolean {
+      return block.isTestBlock === true && !block.hasVideo
     }
   }
 }
@@ -131,8 +142,13 @@ export default {
             :to="{ name: 'material', params: { id: String(block.id) } }"
             class="material-item"
           >
-            <div class="item-preview" :style="{ backgroundImage: `url(${getBlockImageUrl(block.id)})` }">
-              <span class="item-order">{{ block.sortOrder }}</span>
+            <!-- Test block preview -->
+            <div v-if="isPureTestBlock(block)" class="item-preview test-preview">
+              <div class="test-icon-large">📋</div>
+              <span class="test-label">Тест</span>
+            </div>
+            <!-- Video/Image block preview -->
+            <div v-else class="item-preview" :style="{ backgroundImage: `url(${getBlockImageUrl(block.id)})` }">
               <span v-if="block.hasVideo" class="video-indicator">
                 <span class="play-icon">▶</span>
                 <span v-if="getVideoDuration(block)" class="video-duration">{{ getVideoDuration(block) }}</span>
@@ -142,6 +158,7 @@ export default {
             <p class="item-status" :class="{ available: block.isAvailable }">
               {{ block.isAvailable ? 'Доступен' : 'Недоступен' }}
               <span v-if="block.hasVideo" class="video-badge">Видео</span>
+              <span v-if="isPureTestBlock(block)" class="test-badge">Тест</span>
             </p>
           </router-link>
         </div>
@@ -226,6 +243,39 @@ export default {
   padding: 4px 10px;
   border-radius: 12px;
   font-size: 12px;
+  font-weight: 500;
+}
+
+/* Test block preview styles */
+.test-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.test-icon-large {
+  font-size: 64px;
+  margin-bottom: 8px;
+}
+
+.test-label {
+  color: white;
+  font-size: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.test-badge {
+  display: inline-block;
+  background: #667eea;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  margin-left: 8px;
   font-weight: 500;
 }
 
