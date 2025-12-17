@@ -1,5 +1,5 @@
 <script lang="ts">
-import { blocksApi, type BlockResponse } from '@/api/blocks'
+import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blocks'
 import { useUserStore } from '@/stores/user'
 
 export default {
@@ -7,7 +7,12 @@ export default {
     return {
       loading: true,
       error: null as string | null,
-      block: null as BlockResponse | null
+      block: null as BlockResponse | null,
+      videoInfo: null as VideoInfoResponse | null,
+      videoLoading: false,
+      videoError: null as string | null,
+      // Video URL for direct streaming
+      videoUrl: null as string | null,
     }
   },
   computed: {
@@ -26,8 +31,17 @@ export default {
     blockImageUrl(): string {
       return this.block ? blocksApi.getBlockImageUrl(this.block.id) : ''
     },
-    blockVideoUrl(): string {
-      return this.block ? blocksApi.getBlockVideoUrl(this.block.id) : ''
+    hasVideo(): boolean {
+      return this.videoInfo !== null && this.videoInfo.status === 'READY'
+    },
+    videoDescription(): string {
+      return this.videoInfo?.description || 'Описание материала будет добавлено позже.'
+    },
+    videoDuration(): string {
+      return this.videoInfo?.formattedDuration || '00:00'
+    },
+    videoSize(): string {
+      return this.videoInfo?.formattedFileSize || ''
     }
   },
   async mounted() {
@@ -48,6 +62,8 @@ export default {
         const foundBlock = response.data.find(b => b.id === this.blockId)
         if (foundBlock) {
           this.block = foundBlock
+          // Fetch video info after block is loaded
+          await this.fetchVideoInfo()
         } else {
           this.error = 'Материал не найден'
         }
@@ -58,6 +74,29 @@ export default {
         this.loading = false
       }
     },
+
+    async fetchVideoInfo() {
+      if (!this.block) return
+      
+      this.videoLoading = true
+      this.videoError = null
+      try {
+        const response = await blocksApi.getBlockVideoInfo(this.block.id)
+        this.videoInfo = response.data
+        
+        // If video is ready, set the direct stream URL
+        if (this.videoInfo && this.videoInfo.status === 'READY') {
+          this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
+        }
+      } catch (error: unknown) {
+        // Video not found is expected for blocks without video
+        console.error('Видео для этого блока не найдено или ещё не загружено')
+        this.videoInfo = null
+      } finally {
+        this.videoLoading = false
+      }
+    },
+
     async handleVkLogin() {
       try {
         await this.userStore.loginWithVk()
@@ -119,16 +158,38 @@ export default {
 
       <div v-else class="content-sections">
         <section class="content-section video-section">
-          <h2 class="section-title">Видео урок</h2>
-          <div class="video-container">
+          <h2 class="section-title">
+            Видео урок
+            <span v-if="videoInfo" class="video-meta">
+              ({{ videoDuration }} · {{ videoSize }})
+            </span>
+          </h2>
+          
+          <!-- Video player with direct streaming -->
+          <div v-if="videoUrl" class="video-container">
             <video
               controls
               :poster="blockImageUrl"
               class="video-player"
+              :src="videoUrl"
             >
-              <source :src="blockVideoUrl" type="video/mp4">
               Ваш браузер не поддерживает воспроизведение видео.
             </video>
+          </div>
+          
+          <!-- Fallback when no video available -->
+          <div v-else-if="!hasVideo && !videoLoading" class="video-placeholder">
+            <div class="placeholder-content">
+              <div class="placeholder-icon">🎬</div>
+              <p>Видео для этого урока ещё не загружено</p>
+              <img :src="blockImageUrl" :alt="block.title" class="placeholder-image">
+            </div>
+          </div>
+          
+          <!-- Video loading state -->
+          <div v-else class="video-loading">
+            <div class="loading-spinner small"></div>
+            <p>Загрузка информации о видео...</p>
           </div>
         </section>
 
@@ -142,15 +203,24 @@ export default {
         <section class="content-section description-section">
           <h2 class="section-title">Описание</h2>
           <div class="description-content">
-            <p>
-              Этот урок научит вас основам работы с данной темой. 
-              Просмотрите видео выше и выполните практические задания для закрепления материала.
-            </p>
+            <p class="video-description">{{ videoDescription }}</p>
+            
+            <div v-if="videoInfo" class="video-details">
+              <h3>Информация о видео</h3>
+              <ul class="details-list">
+                <li><strong>Длительность:</strong> {{ videoDuration }}</li>
+                <li><strong>Размер:</strong> {{ videoSize }}</li>
+                <li><strong>Формат:</strong> {{ videoInfo.format }}</li>
+                <li><strong>Статус:</strong> {{ videoInfo.status === 'READY' ? 'Готово к просмотру' : 'Обрабатывается' }}</li>
+              </ul>
+            </div>
+            
+            <h3>Цели обучения</h3>
             <ul class="learning-goals">
               <li>Изучите теоретическую часть урока</li>
               <li>Просмотрите видеоматериал до конца</li>
               <li>Выполните практические задания</li>
-              <li>Пройдите тест для проверки знаний</li>
+              <li v-if="block.testId">Пройдите тест для проверки знаний</li>
             </ul>
           </div>
         </section>
@@ -512,5 +582,117 @@ export default {
 
 .complete-btn:hover {
   background: #218838;
+}
+
+/* Video meta info in title */
+.video-meta {
+  font-size: 14px;
+  font-weight: 400;
+  color: #666;
+  margin-left: 8px;
+}
+
+/* Video loading state */
+.video-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 40px;
+}
+
+.video-loading p {
+  color: #666;
+  margin-top: 16px;
+}
+
+.loading-spinner.small {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+/* Video placeholder when no video available */
+.video-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.placeholder-content {
+  text-align: center;
+  padding: 40px;
+}
+
+.placeholder-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.placeholder-content p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.placeholder-image {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+/* Video description styling */
+.video-description {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #333;
+  margin-bottom: 24px;
+  white-space: pre-wrap;
+}
+
+/* Video details section */
+.video-details {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.video-details h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #1a1a1a;
+}
+
+.details-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.details-list li {
+  font-size: 14px;
+  color: #444;
+}
+
+.details-list strong {
+  color: #1a1a1a;
+}
+
+.description-content h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 24px 0 12px 0;
+  color: #1a1a1a;
 }
 </style>
