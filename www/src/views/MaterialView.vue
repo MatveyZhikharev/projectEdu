@@ -1,6 +1,7 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blocks'
 import { useUserStore } from '@/stores/user'
+import { EncryptedVideoPlayer, revokeVideoBlobUrl } from '@/utils/videoDecryption'
 
 export default {
   data() {
@@ -11,8 +12,13 @@ export default {
       videoInfo: null as VideoInfoResponse | null,
       videoLoading: false,
       videoError: null as string | null,
-      // Video URL for direct streaming
+      // Video URL for streaming
       videoUrl: null as string | null,
+      // Chunked streaming state
+      isChunkedStreaming: false,
+      chunkLoadingProgress: 0,
+      videoPlayer: null as EncryptedVideoPlayer | null,
+      useAdminStream: false, // Use admin direct stream (for admins only)
     }
   },
   computed: {
@@ -42,6 +48,10 @@ export default {
     },
     videoSize(): string {
       return this.videoInfo?.formattedFileSize || ''
+    },
+    isAdmin(): boolean {
+      // Check if user has admin role (stored in user store)
+      return this.userStore.user?.role === 'ADMIN'
     }
   },
   async mounted() {
@@ -52,6 +62,10 @@ export default {
     await this.userStore.checkAuthStatus()
     
     await this.fetchBlock()
+  },
+  beforeUnmount() {
+    // Clean up video resources
+    this.cleanupVideo()
   },
   methods: {
     async fetchBlock() {
@@ -67,7 +81,7 @@ export default {
         } else {
           this.error = 'Материал не найден'
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Ошибка загрузки материала:', error)
         this.error = 'Не удалось загрузить материал'
       } finally {
@@ -84,9 +98,17 @@ export default {
         const response = await blocksApi.getBlockVideoInfo(this.block.id)
         this.videoInfo = response.data
         
-        // If video is ready, set the direct stream URL
         if (this.videoInfo && this.videoInfo.status === 'READY') {
-          this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
+          // Try admin direct stream first (if user is admin)
+          // For regular users, use chunked streaming with decryption
+          if (this.isAdmin) {
+            // Admins can use direct stream
+            this.useAdminStream = true
+            this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
+          } else {
+            // Regular users use chunked streaming
+            await this.initChunkedStreaming()
+          }
         }
       } catch (error: unknown) {
         // Video not found is expected for blocks without video
@@ -94,6 +116,88 @@ export default {
         this.videoInfo = null
       } finally {
         this.videoLoading = false
+      }
+    },
+
+    async initChunkedStreaming() {
+      if (!this.block || !this.videoInfo) return
+      
+      this.isChunkedStreaming = true
+      this.chunkLoadingProgress = 0
+      
+      try {
+        // Get the decryption key from the API
+        // NOTE: The backend needs to provide the key endpoint
+        // For now, we'll try to load chunks and see if decryption works
+        const totalChunks = this.videoInfo.totalChunks
+        const mimeType = this.videoInfo.mimeType || 'video/mp4'
+        
+        // Try to load chunks sequentially
+        const chunks: Uint8Array[] = []
+        
+        for (let i = 0; i < totalChunks; i++) {
+          try {
+            const chunkResponse = await blocksApi.getBlockVideoChunk(this.block.id, i)
+            const chunk = chunkResponse.data
+            
+            // Check if we have IV for decryption
+            if (chunk.iv && chunk.encryptedData) {
+              // NOTE: Decryption key must be provided by backend
+              // This is a placeholder - backend needs to send the key
+              console.log(`Chunk ${i} received with IV, awaiting decryption key from backend`)
+              
+              // For now, we cannot decrypt without the key
+              // The backend needs to add an endpoint to get the key
+              // e.g., GET /api/video/{blockId}/key
+              this.videoError = 'Расшифровка видео требует обновления на сервере. Попробуйте админ-стриминг.'
+              this.isChunkedStreaming = false
+              
+              // Fallback to admin stream for testing
+              this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
+              return
+            } else {
+              // No encryption - use raw data
+              // This shouldn't happen based on backend code, but handle it
+              console.log(`Chunk ${i} has no IV, treating as unencrypted`)
+            }
+            
+            this.chunkLoadingProgress = Math.round(((i + 1) / totalChunks) * 100)
+          } catch (chunkError) {
+            console.error(`Error loading chunk ${i}:`, chunkError)
+            // If chunk loading fails, fallback to admin stream
+            this.videoError = 'Ошибка загрузки видео чанков. Попробуйте перезагрузить страницу.'
+            this.isChunkedStreaming = false
+            
+            // Fallback: try admin direct stream
+            this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
+            return
+          }
+        }
+        
+        // Create video blob from chunks
+        if (chunks.length > 0) {
+          const blobParts = chunks.map(chunk => chunk.buffer as ArrayBuffer)
+          const blob = new Blob(blobParts, { type: mimeType })
+          this.videoUrl = URL.createObjectURL(blob)
+        }
+        
+      } catch (error) {
+        console.error('Error initializing chunked streaming:', error)
+        this.videoError = 'Не удалось загрузить видео'
+        this.isChunkedStreaming = false
+        
+        // Fallback to admin stream
+        this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
+      }
+    },
+
+    cleanupVideo() {
+      if (this.videoUrl && this.videoUrl.startsWith('blob:')) {
+        revokeVideoBlobUrl(this.videoUrl)
+      }
+      if (this.videoPlayer) {
+        this.videoPlayer.destroy()
+        this.videoPlayer = null
       }
     },
 
@@ -163,9 +267,18 @@ export default {
             <span v-if="videoInfo" class="video-meta">
               ({{ videoDuration }} · {{ videoSize }})
             </span>
+            <span v-if="isChunkedStreaming" class="streaming-badge">Чанковый стриминг</span>
           </h2>
           
-          <!-- Video player with direct streaming -->
+          <!-- Chunk loading progress -->
+          <div v-if="isChunkedStreaming && chunkLoadingProgress < 100" class="chunk-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: chunkLoadingProgress + '%' }"></div>
+            </div>
+            <p class="progress-text">Загрузка видео: {{ chunkLoadingProgress }}%</p>
+          </div>
+          
+          <!-- Video player with streaming -->
           <div v-if="videoUrl" class="video-container">
             <video
               controls
@@ -177,10 +290,11 @@ export default {
             >
               Ваш браузер не поддерживает воспроизведение видео.
             </video>
+            <p v-if="videoError" class="video-warning">{{ videoError }}</p>
           </div>
           
           <!-- Fallback when no video available -->
-          <div v-else-if="!hasVideo && !videoLoading" class="video-placeholder">
+          <div v-else-if="!hasVideo && !videoLoading && !isChunkedStreaming" class="video-placeholder">
             <div class="placeholder-content">
               <div class="placeholder-icon">🎬</div>
               <p>Видео для этого урока ещё не загружено</p>
@@ -695,5 +809,56 @@ export default {
   font-weight: 600;
   margin: 24px 0 12px 0;
   color: #1a1a1a;
+}
+
+/* Chunk streaming styles */
+.streaming-badge {
+  display: inline-block;
+  background: #17a2b8;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.chunk-progress {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #007bff, #00c6ff);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  margin: 12px 0 0 0;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+}
+
+.video-warning {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 8px;
+  font-size: 14px;
 }
 </style>

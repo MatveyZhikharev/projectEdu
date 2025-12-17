@@ -1,5 +1,10 @@
 <script lang="ts">
-import { blocksApi, type BlockResponse } from '@/api/blocks'
+import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blocks'
+
+interface BlockWithVideo extends BlockResponse {
+  hasVideo?: boolean
+  videoInfo?: VideoInfoResponse | null
+}
 
 export default {
   data() {
@@ -7,7 +12,7 @@ export default {
       isMaterialVisible: true,
       loading: false,
       error: null as string | null,
-      blocks: [] as BlockResponse[]
+      blocks: [] as BlockWithVideo[]
     }
   },
   computed: {
@@ -27,16 +32,38 @@ export default {
       this.error = null
       try {
         const response = await blocksApi.getAllAvailableBlocks()
-        this.blocks = response.data
-      } catch (error: any) {
+        this.blocks = response.data.map(block => ({ ...block, hasVideo: false, videoInfo: null }))
+        
+        // Check video availability for each block
+        await this.checkVideoForBlocks()
+      } catch (error: unknown) {
         console.error('Ошибка загрузки блоков:', error)
         this.error = 'Не удалось загрузить материалы курса'
       } finally {
         this.loading = false
       }
     },
+    async checkVideoForBlocks() {
+      // Check video for each block in parallel
+      const videoChecks = this.blocks.map(async (block) => {
+        try {
+          const response = await blocksApi.getBlockVideoInfo(block.id)
+          if (response.data && response.data.status === 'READY') {
+            block.hasVideo = true
+            block.videoInfo = response.data
+          }
+        } catch {
+          // No video for this block - that's expected
+          block.hasVideo = false
+        }
+      })
+      await Promise.all(videoChecks)
+    },
     getBlockImageUrl(blockId: number) {
       return blocksApi.getBlockImageUrl(blockId)
+    },
+    getVideoDuration(block: BlockWithVideo): string {
+      return block.videoInfo?.formattedDuration || ''
     }
   }
 }
@@ -106,10 +133,15 @@ export default {
           >
             <div class="item-preview" :style="{ backgroundImage: `url(${getBlockImageUrl(block.id)})` }">
               <span class="item-order">{{ block.sortOrder }}</span>
+              <span v-if="block.hasVideo" class="video-indicator">
+                <span class="play-icon">▶</span>
+                <span v-if="getVideoDuration(block)" class="video-duration">{{ getVideoDuration(block) }}</span>
+              </span>
             </div>
             <h5 class="item-header">{{ block.title }}</h5>
             <p class="item-status" :class="{ available: block.isAvailable }">
               {{ block.isAvailable ? 'Доступен' : 'Недоступен' }}
+              <span v-if="block.hasVideo" class="video-badge">Видео</span>
             </p>
           </router-link>
         </div>
@@ -211,6 +243,40 @@ export default {
 
 .item-status.available {
   color: #2e7d32;
+}
+
+.video-indicator {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.play-icon {
+  font-size: 10px;
+}
+
+.video-duration {
+  font-size: 11px;
+}
+
+.video-badge {
+  display: inline-block;
+  background: #007bff;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  margin-left: 8px;
+  font-weight: 500;
 }
 
 .loading-state,

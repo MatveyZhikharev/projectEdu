@@ -6,6 +6,7 @@ export interface User {
   lastName?: string
   email?: string
   vkId?: number
+  role?: string
 }
 
 interface UserState {
@@ -52,6 +53,7 @@ export const useUserStore = defineStore('user', {
               lastName: typeof parsed.lastName === 'string' ? parsed.lastName : undefined,
               email: typeof parsed.email === 'string' ? parsed.email : undefined,
               vkId: typeof parsed.vkId === 'number' ? parsed.vkId : undefined,
+              role: typeof parsed.role === 'string' ? parsed.role : undefined,
             }
           }
         }
