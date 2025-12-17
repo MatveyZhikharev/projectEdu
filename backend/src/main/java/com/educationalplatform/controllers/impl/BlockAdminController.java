@@ -4,10 +4,15 @@ import com.educationalplatform.controllers.BlockAdminOperations;
 import com.educationalplatform.domain.dto.request.BlockAddRequest;
 import com.educationalplatform.domain.dto.request.BlockUpdateRequest;
 import com.educationalplatform.domain.dto.response.BlockResponse;
+import com.educationalplatform.domain.dto.response.VideoFileResponse;
+import com.educationalplatform.domain.dto.response.VideoInfoResponse;
 import com.educationalplatform.service.BlockService;
+import com.educationalplatform.service.VideoService;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,6 +23,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class BlockAdminController implements BlockAdminOperations {
 
   private final BlockService blockService;
+  private final VideoService videoService;
 
   @Override
   public ResponseEntity<BlockResponse> add(BlockAddRequest request) {
@@ -49,9 +55,19 @@ public class BlockAdminController implements BlockAdminOperations {
   }
 
   @Override
-  public ResponseEntity<Void> updateVideo(Long blockId, MultipartFile video) {
-    blockService.updateVideo(blockId, video);
+  public ResponseEntity<VideoInfoResponse> uploadVideo(Long blockId, MultipartFile file,
+      String description) {
+    videoService.updateVideo(blockId, file, description);
     return ResponseEntity.noContent().build();
+  }
+
+  @Override
+  public ResponseEntity<Resource> streamVideo(Long blockId) {
+    VideoFileResponse videoData = videoService.getVideoStream(blockId);
+
+    return ResponseEntity.ok()
+        .contentType(videoData.getMediaType())
+        .body(new InputStreamResource(videoData.getVideo()));
   }
 
   @Override

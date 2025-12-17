@@ -39,13 +39,13 @@ public class Block {
   @JoinColumn(name = "test_id")
   private Test test;
 
+  @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
+  @JoinColumn(name = "video_id")
+  private Video video;
+
   @Column(name = "has_image")
   @Builder.Default
   private Boolean hasImage = false;
-
-  @Column(name = "has_video")
-  @Builder.Default
-  private Boolean hasVideo = false;
 
   @Column(name = "is_available")
   @Builder.Default

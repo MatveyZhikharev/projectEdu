@@ -1,10 +1,10 @@
 package com.educationalplatform.controllers;
 
+import com.educationalplatform.domain.dto.response.UserResponse;
 import com.educationalplatform.domain.model.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -32,4 +32,8 @@ public interface AuthOperations {
   @Operation(summary = "Зарегался ли пользователь?")
   @GetMapping("/status")
   ResponseEntity<Map<String, Boolean>> getUserAuthStatus(@AuthenticationPrincipal User user);
+
+  @Operation(summary = "Получить пользователя")
+  @GetMapping("/user")
+  ResponseEntity<UserResponse> getUser(@AuthenticationPrincipal User user);
 }

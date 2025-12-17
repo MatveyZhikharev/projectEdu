@@ -7,10 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+//@Configuration
 public class OpenApiConfiguration {
 
-  private static final String URL_TEMPLATE = "https://%s/api";
+  private static final String URL_TEMPLATE = "https://%s";
 
   @Value("${global.domain}")
   private String domain;

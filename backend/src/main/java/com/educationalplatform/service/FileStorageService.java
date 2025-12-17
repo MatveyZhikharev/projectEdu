@@ -106,6 +106,10 @@ public class FileStorageService {
     return getFileFromFolder("videos", videoId.toString(), "video");
   }
 
+  public InputStream getVideo(Long videoId, long offset, long length) {
+    return getFileFromFolder("videos", videoId.toString(), "video", offset, length);
+  }
+
   public void deleteVideo(Long videoId) {
     deleteFileFromFolder("videos", videoId.toString(), "video");
   }
@@ -140,24 +144,54 @@ public class FileStorageService {
   }
 
   private InputStream getFileFromFolder(String folder, String entityId, String fileType) {
+    String fileName = resolveFileName(folder, entityId, fileType);
+
     try {
-      String fileNamePattern = folder + "/" + entityId + "/" + fileType;
-      String fileName = findFileByPattern(fileNamePattern);
-
-      if (fileName == null) {
-        throw new RuntimeException(fileType + " not found for " + folder + ": " + entityId);
-      }
-
       return minioClient.getObject(
-        GetObjectArgs.builder()
-          .bucket(bucketName)
-          .object(fileName)
-          .build()
+          GetObjectArgs.builder()
+              .bucket(bucketName)
+              .object(fileName)
+              .build()
       );
     } catch (Exception e) {
       log.error("Error getting {} for {}/{}", fileType, folder, entityId, e);
       throw new RuntimeException("Failed to get " + fileType, e);
     }
+  }
+
+  private InputStream getFileFromFolder(String folder, String entityId, String fileType,
+      long offset, long length) {
+    String fileName = resolveFileName(folder, entityId, fileType);
+
+    try {
+      return minioClient.getObject(
+          GetObjectArgs.builder()
+              .bucket(bucketName)
+              .object(fileName)
+              .offset(offset)
+              .length(length)
+              .build()
+      );
+    } catch (Exception e) {
+      log.error("Error getting {} (offset={}, length={}) for {}/{}",
+          fileType, offset, length, folder, entityId, e);
+      throw new RuntimeException("Failed to get " + fileType, e);
+    }
+  }
+
+  private String resolveFileName(String folder, String entityId, String fileType) {
+    String fileNamePattern = folder + "/" + entityId + "/" + fileType;
+    String fileName = null;
+    try {
+      fileName = findFileByPattern(fileNamePattern);
+    } catch (Exception e) {
+      //pass
+    }
+
+    if (fileName == null) {
+      throw new RuntimeException(fileType + " not found for " + folder + ": " + entityId);
+    }
+    return fileName;
   }
 
   private void deleteFileFromFolder(String folder, String entityId, String fileType) {
