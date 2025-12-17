@@ -157,7 +157,7 @@ export default {
       </div>
 
       <div v-else class="content-sections">
-        <section class="content-section video-section">
+        <section class="video-section video-section video-section">
           <h2 class="section-title">
             Видео урок
             <span v-if="videoInfo" class="video-meta">
@@ -172,6 +172,8 @@ export default {
               :poster="blockImageUrl"
               class="video-player"
               :src="videoUrl"
+              height="540px"
+              width="960px"
             >
               Ваш браузер не поддерживает воспроизведение видео.
             </video>
@@ -190,13 +192,6 @@ export default {
           <div v-else class="video-loading">
             <div class="loading-spinner small"></div>
             <p>Загрузка информации о видео...</p>
-          </div>
-        </section>
-
-        <section class="content-section image-section">
-          <h2 class="section-title">Превью материала</h2>
-          <div class="image-container">
-            <img :src="blockImageUrl" :alt="block.title" class="material-image">
           </div>
         </section>
 
@@ -441,6 +436,13 @@ export default {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
+.video-section {
+  background: white;
+  border-radius: 16px;
+  padding-top: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
 .section-title {
   font-size: 20px;
   font-weight: 600;
@@ -456,7 +458,6 @@ export default {
 
 .video-player {
   width: 100%;
-  max-height: 500px;
   display: block;
 }
 
