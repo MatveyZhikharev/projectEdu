@@ -98,11 +98,11 @@ export default {
 
     <div v-else-if="block" class="material-content">
       <div class="material-header">
-        <div class="material-order">Урок {{ block.sortOrder }}</div>
+        <span class="material-order">Урок {{ block.sortOrder }}</span>
         <h1 class="material-title">{{ block.title }}</h1>
-        <div class="material-status" :class="{ available: block.isAvailable }">
+        <span class="material-status" :class="{ available: block.isAvailable }">
           {{ block.isAvailable ? 'Доступен' : 'Недоступен' }}
-        </div>
+        </span>
       </div>
 
       <div v-if="!isAuthenticated && authChecked" class="auth-required">
