@@ -4,14 +4,12 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
-import {useUserStore} from "@/stores/user.ts";
 
 const app = createApp(App)
 
+// Important: createPinia must be used before router (which uses useUserStore)
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
-app.use(createPinia())
 
 app.mount('#app')
-
-const userStore = useUserStore()
-userStore.initFromStorage()

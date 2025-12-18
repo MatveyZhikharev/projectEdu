@@ -1,6 +1,6 @@
 <script lang="ts">
 import { blocksApi, type BlockResponse, type VideoInfoResponse } from '@/api/blocks'
-import { testsApi, type TestData, type Question, type Answer } from '@/api/tests'
+import { testsApi, type TestData } from '@/api/tests'
 import { useUserStore } from '@/stores/user'
 import { revokeVideoBlobUrl } from '@/utils/videoDecryption'
 
@@ -60,18 +60,13 @@ export default {
       // Check if user has admin role (stored in user store)
       return this.userStore.user?.role === 'ADMIN'
     },
-    // Test block check
-    isTestBlock(): boolean {
+    // Test block check - block has a test attached
+    hasTest(): boolean {
       return this.block?.testId != null
     },
     // Pure test block (test without video)
     isPureTestBlock(): boolean {
-      return this.isTestBlock && !this.hasVideo
-    },
-    // Check if all questions are answered
-    allQuestionsAnswered(): boolean {
-      if (!this.testData) return false
-      return this.testData.questions.every(q => this.selectedAnswers[q.id] !== undefined)
+      return this.hasTest && !this.hasVideo
     }
   },
   async mounted() {
@@ -119,97 +114,18 @@ export default {
         this.videoInfo = response.data
         
         if (this.videoInfo && this.videoInfo.status === 'READY') {
-          // Try admin direct stream first (if user is admin)
-          // For regular users, use chunked streaming with decryption
-          if (this.isAdmin) {
-            // Admins can use direct stream
-            this.useAdminStream = true
-            this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
-          } else {
-            // Regular users use chunked streaming
-            await this.initChunkedStreaming()
-          }
+          // For now, use admin direct stream for everyone who can access
+          // Chunked streaming requires backend to return IV and encryption key
+          // which is not yet implemented
+          this.useAdminStream = true
+          this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
         }
       } catch (error: unknown) {
         // Video not found is expected for blocks without video
-        console.error('Видео для этого блока не найдено или ещё не загружено')
+        console.log('Видео для этого блока не найдено или ещё не загружено')
         this.videoInfo = null
       } finally {
         this.videoLoading = false
-      }
-    },
-
-    async initChunkedStreaming() {
-      if (!this.block || !this.videoInfo) return
-      
-      this.isChunkedStreaming = true
-      this.chunkLoadingProgress = 0
-      
-      try {
-        const totalChunks = this.videoInfo.totalChunks
-        const mimeType = this.videoInfo.mimeType || 'video/mp4'
-        
-        // Try to load chunks sequentially
-        const chunks: Uint8Array[] = []
-        
-        for (let i = 0; i < totalChunks; i++) {
-          try {
-            const chunkResponse = await blocksApi.getBlockVideoChunk(this.block.id, i)
-            const chunk = chunkResponse.data
-            
-            // Check if we have IV for decryption
-            if (chunk.iv && chunk.encryptedData) {
-              // NOTE: Decryption key must be provided by backend
-              // Currently the backend doesn't expose the decryption key
-              // We need an endpoint like GET /api/video/{blockId}/key
-              console.log(`Chunk ${i} received with IV, but decryption key is not available from backend`)
-              
-              // Fallback to admin stream since we can't decrypt
-              this.videoError = 'Расшифровка видео требует обновления на сервере. Используется прямой стриминг.'
-              this.isChunkedStreaming = false
-              this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
-              return
-            } else if (chunk.encryptedData) {
-              // Encrypted data without IV - backend bug, use fallback
-              console.log(`Chunk ${i} has encrypted data but no IV`)
-              this.videoError = 'Ошибка формата видео данных. Используется прямой стриминг.'
-              this.isChunkedStreaming = false
-              this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
-              return
-            }
-            // If we somehow get unencrypted data, we would add it here
-            // But based on backend code, all chunks should be encrypted
-            
-            this.chunkLoadingProgress = Math.round(((i + 1) / totalChunks) * 100)
-          } catch (chunkError) {
-            console.error(`Error loading chunk ${i}:`, chunkError)
-            // If chunk loading fails, fallback to admin stream
-            this.videoError = 'Ошибка загрузки видео чанков. Используется прямой стриминг.'
-            this.isChunkedStreaming = false
-            this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
-            return
-          }
-        }
-        
-        // Create video blob from successfully loaded chunks
-        if (chunks.length > 0) {
-          const blobParts = chunks.map(chunk => chunk.buffer as ArrayBuffer)
-          const blob = new Blob(blobParts, { type: mimeType })
-          this.videoUrl = URL.createObjectURL(blob)
-        } else {
-          // No chunks loaded - use admin stream fallback
-          this.videoError = 'Не удалось загрузить видео чанки. Используется прямой стриминг.'
-          this.isChunkedStreaming = false
-          this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
-        }
-        
-      } catch (error) {
-        console.error('Error initializing chunked streaming:', error)
-        this.videoError = 'Не удалось загрузить видео'
-        this.isChunkedStreaming = false
-        
-        // Fallback to admin stream
-        this.videoUrl = blocksApi.getBlockVideoStreamUrl(this.block.id)
       }
     },
 
@@ -231,6 +147,12 @@ export default {
     },
     goBack() {
       this.$router.back()
+    },
+    
+    // Check if all questions are answered
+    allQuestionsAnswered(): boolean {
+      if (!this.testData) return false
+      return this.testData.questions.every(q => this.selectedAnswers[q.id] !== undefined)
     },
     
     // Test methods
@@ -260,7 +182,7 @@ export default {
     },
     
     submitTest() {
-      if (!this.testData || !this.allQuestionsAnswered) return
+      if (!this.testData || !this.allQuestionsAnswered()) return
       
       let correctCount = 0
       const total = this.testData.questions.length
@@ -408,10 +330,11 @@ export default {
           </div>
         </section>
 
-        <section v-if="block.testId" class="content-section test-section">
+        <section v-if="hasTest" class="content-section test-section">
           <h2 class="section-title">
             Тестирование
             <span v-if="isPureTestBlock" class="test-type-badge">Блок-тест</span>
+            <span v-else class="test-type-badge video-test">Тест после видео</span>
           </h2>
           
           <!-- Test not started -->
@@ -1032,6 +955,10 @@ export default {
   font-weight: 500;
   margin-left: 10px;
   vertical-align: middle;
+}
+
+.test-type-badge.video-test {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
 }
 
 .test-hint {
