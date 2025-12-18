@@ -1,4 +1,4 @@
-package com.educationalplatform.streamingservice.service;
+package com.educationalplatform.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,8 @@ public class VideoEncryptionService {
 
   public byte[] encrypt(byte[] data, String base64Key, byte[] initializationVector) {
     try {
-      byte[] keyBytes = Base64.getDecoder().decode(base64Key);
+      byte[] keyBytes = Base64.getUrlDecoder().decode(base64Key);
+
       SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "AES");
       IvParameterSpec ivSpec = new IvParameterSpec(initializationVector);
 
@@ -32,7 +33,6 @@ public class VideoEncryptionService {
       throw new RuntimeException("Ошибка при шифровании данных", e);
     }
   }
-
 
   public byte[] encrypt(byte[] data, String base64Key) {
     byte[] iv = generateIv();

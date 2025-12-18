@@ -1,27 +1,24 @@
-package com.educationalplatform.streamingservice.model.dto;
+package com.educationalplatform.domain.dto.response;
 
+
+import com.educationalplatform.domain.enums.VideoFormat;
+import com.educationalplatform.domain.enums.VideoStatus;
+import com.educationalplatform.domain.model.Video;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.educationalplatform.streamingservice.entity.Video;
-import com.educationalplatform.streamingservice.model.enums.VideoFormat;
-import com.educationalplatform.streamingservice.model.enums.VideoStatus;
-
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class VideoDTO {
+public class VideoInfoResponse {
 
   @JsonProperty("id")
   private Long id;
-
-  @JsonProperty("title")
-  private String title;
 
   @JsonProperty("description")
   private String description;
@@ -59,10 +56,9 @@ public class VideoDTO {
   @JsonProperty("updatedAt")
   private LocalDateTime updatedAt;
 
-  public static VideoDTO fromEntity(final Video video) {
-    return VideoDTO.builder()
+  public static VideoInfoResponse fromEntity(final Video video) {
+    return VideoInfoResponse.builder()
         .id(video.getId())
-        .title(video.getTitle())
         .description(video.getDescription())
         .fileSize(video.getFileSize())
         .formattedFileSize(video.getFormattedFileSize())

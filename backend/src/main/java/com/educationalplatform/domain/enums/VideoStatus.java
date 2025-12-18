@@ -1,8 +1,12 @@
-package com.educationalplatform.streamingservice.model.enums;
+package com.educationalplatform.domain.enums;
 
 import java.util.Arrays;
 import java.util.Optional;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@Getter
+@RequiredArgsConstructor
 public enum VideoStatus {
   PENDING("Ожидает обработки"),
   PROCESSING("Обрабатывается"),
@@ -11,14 +15,6 @@ public enum VideoStatus {
   DELETED("Удалено");
 
   private final String description;
-
-  VideoStatus(final String description) {
-    this.description = description;
-  }
-
-  public String getDescription() {
-    return description;
-  }
 
   public static Optional<VideoStatus> fromString(final String status) {
     if (status == null || status.isBlank()) {

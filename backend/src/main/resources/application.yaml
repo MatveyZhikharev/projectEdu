@@ -1,19 +1,22 @@
 global:
-  domain: ${DOMAIN}
+  domain:
 
 spring:
   application:
     name: EducationalPlatform
 
+  jpa:
+    open-in-view: false
+
   datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: postgres123
     driver-class-name: org.postgresql.Driver
 
     jpa:
       open-in-view: false
-      show-sql: false
+      show-sql: true
       properties:
         hibernate:
           format_sql: true
@@ -38,24 +41,25 @@ management:
     web:
       base-path: /api/actuator
       exposure:
-        include: health
+        include: "*"
+        exclude: shutdown
 
 jwt:
   name: jwt_token
   secret: 53A73E5F1C4E0A2D3B5F2D784E6A1B423D6F247D1F6E5C3A596D635A75327855
-  expiration: 155520000000
+  expiration: 3600000
+
+logging:
+  level:
+    org.springframework.web.reactive.function.client.ExchangeFunctions: TRACE
+    org.springframework.web.reactive.function.client.ExchangeFilterFunctions: TRACE
+    com.educationalplatform.service.AuthService: DEBUG
 
 vk:
   app-id: 54299133
   secret: pJcJlRld2MwdAFpOGv5b
-  redirect-uri: https://free.testeduplatform.tw1.ru/api/auth/vkCallback
-  redirect-uri-after: /
-
-minio:
-  endpoint: ${MINIO_ENDPOINT}
-  access-key: ${MINIO_ACCESS_KEY}
-  secret-key: ${MINIO_SECRET_KEY}
-  bucket-name: ${MINIO_BUCKET_NAME}
+  redirect-uri: https://localhost/api/auth/vkCallback
+  redirect-uri-after: http://localhost:5173/
 
 springdoc:
   api-docs:
@@ -63,5 +67,11 @@ springdoc:
   swagger-ui:
     path: /api/swagger-ui.html
 
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin123
+  bucket-name: minioadmin
+
 server:
-  port: ${APP_PORT}
+  port: 80

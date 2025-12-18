@@ -42,7 +42,7 @@ public class BlockService {
       block.setIsAvailable(false);
     } else {
       boolean hasTest = block.getTest() != null;
-      boolean hasVideo = fileStorageService.hasVideo(blockId);
+      boolean hasVideo = block.getVideo() != null;
       if (!hasTest && !hasVideo) {
         throw new BadRequestException("Cannot publish block without attached test or video");
       }
@@ -78,18 +78,6 @@ public class BlockService {
   }
 
   @Transactional
-  public void updateVideo(Long blockId, MultipartFile video) {
-    Block block = blockRepository.findById(blockId)
-        .orElseThrow(BlockNotFoundException::new);
-    if (fileStorageService.hasVideo(blockId)) {
-      fileStorageService.deleteVideo(blockId);
-    }
-    fileStorageService.uploadVideo(blockId, video);
-    block.setHasVideo(true);
-    blockRepository.save(block);
-  }
-
-  @Transactional
   public BlockResponse updateBlock(BlockUpdateRequest updateRequest) {
     Block block = blockRepository.findById(updateRequest.getBlockId())
         .orElseThrow(BlockNotFoundException::new);
@@ -106,8 +94,8 @@ public class BlockService {
     if (block.getHasImage()) {
       fileStorageService.deleteBlockImage(blockId);
     }
-    if (block.getHasVideo()) {
-      fileStorageService.deleteVideo(blockId);
+    if (block.getVideo() != null) {
+      fileStorageService.deleteVideo(block.getVideo().getId());
     }
     blockRepository.delete(block);
   }

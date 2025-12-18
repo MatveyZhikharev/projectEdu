@@ -1,4 +1,4 @@
-package com.educationalplatform.streamingservice.model.enums;
+package com.educationalplatform.domain.enums;
 
 import java.util.Arrays;
 import java.util.Optional;

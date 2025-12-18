@@ -1,4 +1,4 @@
-package com.educationalplatform.streamingservice.entity;
+package com.educationalplatform.domain.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,8 +16,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import com.educationalplatform.streamingservice.model.enums.VideoFormat;
-import com.educationalplatform.streamingservice.model.enums.VideoStatus;
+import com.educationalplatform.domain.enums.VideoFormat;
+import com.educationalplatform.domain.enums.VideoStatus;
 
 @Entity
 @Table(name = "videos")
@@ -32,14 +32,8 @@ public class Video {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @Column(name = "title", nullable = false, length = 255)
-  private String title;
-
   @Column(name = "description", columnDefinition = "TEXT")
   private String description;
-
-  @Column(name = "file_path", nullable = false, unique = true, length = 500)
-  private String filePath;
 
   @Column(name = "file_size", nullable = false)
   private Long fileSize;

@@ -1,0 +1,9 @@
+ALTER TABLE blocks
+    ADD COLUMN IF NOT EXISTS video_id BIGINT REFERENCES videos(id) ON DELETE SET NULL;
+
+ALTER TABLE blocks
+    DROP COLUMN IF EXISTS has_video;
+
+ALTER TABLE videos
+    DROP COLUMN IF EXISTS title,
+    DROP COLUMN IF EXISTS file_path;
