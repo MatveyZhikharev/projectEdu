@@ -28,7 +28,7 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: AdminView,
-      meta: { requiresAuth: true, requiresAdmin: true }
+      meta: { requiresAuth: true }
     },
     {
       path: '/my-courses',
@@ -95,12 +95,6 @@ router.beforeEach(async (to, _from, next) => {
     // After checking, redirect to profile if still not authenticated
     if (!userStore.isAuthenticated) {
       next({ name: 'profile' })
-      return
-    }
-    
-    // Check admin requirement
-    if (to.meta.requiresAdmin && userStore.user?.role !== 'ADMIN') {
-      next({ name: 'home' })
       return
     }
   }
