@@ -315,7 +315,7 @@ export default {
 
     <div v-else-if="block" class="material-content">
       <div class="material-header">
-        <span class="material-order">Урок {{ block.sortOrder }}</span>
+        <span class="material-order">Урок {{ block.sortOrder + 1 }}</span>
         <h1 class="material-title">{{ block.title }}</h1>
         <span class="material-status" :class="{ available: block.isAvailable }">
           {{ block.isAvailable ? 'Доступен' : 'Недоступен' }}
@@ -337,7 +337,7 @@ export default {
       <div v-else class="content-sections">
         <section class="video-section video-section video-section">
           <h2 class="section-title">
-            Видео урок
+            Видеоурок
             <span v-if="videoInfo" class="video-meta">
               ({{ videoDuration }} · {{ videoSize }})
             </span>
@@ -359,7 +359,7 @@ export default {
               :poster="blockImageUrl"
               class="video-player"
               :src="videoUrl"
-              height="540px"
+              height="675px"
               width="960px"
             >
               Ваш браузер не поддерживает воспроизведение видео.
@@ -1295,5 +1295,9 @@ export default {
 
 .continue-btn:hover {
   background: #218838;
+}
+
+.video-warning {
+  display: none;
 }
 </style>

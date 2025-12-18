@@ -168,6 +168,14 @@ export default {
 </template>
 
 <style scoped>
+.course-title {
+  margin-top: 40px;
+}
+
+.section-title {
+  margin-top: 30px;
+}
+
 .course-container {
   padding: 0 100px;
   width: 100%;
@@ -347,7 +355,7 @@ export default {
 
 .course-meta {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
 }
 

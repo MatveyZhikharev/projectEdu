@@ -190,6 +190,11 @@ export default {
             <span class="settings-label">Безопасность</span>
             <span class="settings-status">VK авторизация</span>
           </div>
+          <div class="settings-item">
+            <span class="settings-icon">👩‍💻</span>
+            <span class="settings-label">Админ панель</span>
+            <a href="/admin" class="settings-status">перейти</a>
+          </div>
         </div>
       </div>
     </div>

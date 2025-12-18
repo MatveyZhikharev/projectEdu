@@ -673,7 +673,7 @@ export default {
 }
 
 .tab-btn.active {
-  background: #007bff;
+  background: #17a2b8;
   color: white;
 }
 
