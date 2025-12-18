@@ -96,7 +96,6 @@ public class AuthService {
   public ResponseCookie handleCallback(String code, String state, String deviceId) {
     log.info("[VK AUTH] Received code from VK: {}, state: {}, deviceId: {}", code, state, deviceId);
 
-    log.warn(state);
     VkAuthState vkAuthState = vkAuthStateRepository.findByState(state)
         .orElseThrow(() -> new VkAuthException("State not found or expired"));
 

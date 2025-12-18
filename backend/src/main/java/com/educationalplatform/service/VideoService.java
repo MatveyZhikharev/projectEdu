@@ -12,8 +12,10 @@ import com.educationalplatform.exceptions.BlockNotFoundException;
 import com.educationalplatform.repository.BlockRepository;
 import com.educationalplatform.repository.VideoRepository;
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.Optional;
-import java.util.UUID;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -46,6 +48,8 @@ public class VideoService {
     long fileSize = videoFile.getSize();
     int totalChunks = (int) Math.ceil((double) fileSize / DEFAULT_CHUNK_SIZE);
 
+    String encryptionKey = generateAesKey();
+
     Video video = Video.builder()
         .description(description)
         .fileSize(fileSize)
@@ -54,7 +58,7 @@ public class VideoService {
         .status(VideoStatus.READY)
         .chunkSize(DEFAULT_CHUNK_SIZE)
         .totalChunks(totalChunks)
-        .encryptionKey(UUID.randomUUID().toString())
+        .encryptionKey(encryptionKey)
         .durationSeconds(0)
         .build();
 
@@ -150,5 +154,16 @@ public class VideoService {
     throw new IllegalArgumentException(
         "Unsupported video format: mimeType=" + mimeType + ", extension=" + ext
     );
+  }
+
+  private String generateAesKey() {
+    try {
+      KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+      keyGen.init(128);
+      SecretKey secretKey = keyGen.generateKey();
+      return Base64.getUrlEncoder().encodeToString(secretKey.getEncoded());
+    } catch (Exception e) {
+      throw new RuntimeException("Error generating encryption key", e);
+    }
   }
 }

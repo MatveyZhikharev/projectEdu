@@ -32,7 +32,6 @@ public class AuthController implements AuthOperations {
   @Override
   public ResponseEntity<Void> callback(String code, String state, String deviceId) {
     ResponseCookie cookie = authService.handleCallback(code, state, deviceId);
-    System.out.println(cookie + "GOOOL");
     return ResponseEntity.status(HttpStatus.FOUND)
         .header(HttpHeaders.SET_COOKIE, cookie.toString())
         .header(HttpHeaders.LOCATION, redirectUri)
